@@ -12,8 +12,8 @@ android {
         applicationId = "com.example.padavancontrol"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.2-subnet"
+        versionCode = 4
+        versionName = "1.2.1-subnet"
     }
 
     buildTypes {

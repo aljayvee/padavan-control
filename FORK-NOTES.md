@@ -3,7 +3,7 @@
 Source copied from the patched fork:
 
 - https://github.com/antoxa78/padavan-control
-- Release: https://github.com/antoxa78/padavan-control/releases/tag/v1.2-subnet
+- Release: https://github.com/antoxa78/padavan-control/releases/tag/v1.2.1-subnet
 
 ## Changes
 
@@ -16,6 +16,7 @@ Source copied from the patched fork:
 - Remember Credentials now respects the login checkbox and Settings toggle.
 - Polling now runs only while a screen is visible, backs off after failures, and caches band-status pages.
 - Faster startup: ViewModels are created on demand and regex patterns are cached.
+- Gentler `/24` discovery: lower concurrency, jitter, Wi-Fi-only scanning, and no SSDP when a router is already found. This avoids temporary DNS/DHCP disruption on weak routers.
 - Manual IP and saved router address still work.
 
 ## Build
@@ -32,11 +33,11 @@ The APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
 ## Install
 
 - Android 8.0 or newer.
-- The included APK is **debug-signed** with the same debug key as `1.1-subnet`, so it can be installed over the previous release.
+- The included APK is **debug-signed** with the same debug key as `1.1-subnet` and `1.2-subnet`, so it can be installed over the previous release.
 - Connect the phone to the router's main Wi-Fi.
 - If auto-scan misses the router, use **Set IP Manually** with `192.168.31.10`.
 
 ## APK
 
-- `dist/Padavan_Control-1.2-subnet.apk`
-- SHA256: `0450b77f30f1574b4f065abd209d2e91c5c46483cede4e7731086c4bd0957653`
+- `dist/Padavan_Control-1.2.1-subnet.apk`
+- SHA256: `c6e0f19957ab2b5ef8f0056dc26492c7d24b673d63bfd425e7396771f17e9d59`

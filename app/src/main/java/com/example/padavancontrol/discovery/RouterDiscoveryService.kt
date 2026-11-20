@@ -8,6 +8,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
@@ -70,10 +71,11 @@ object RouterDiscoveryService {
     }
 
     // Short-timeout cleartext client used when sweeping the local subnet.
+    // LAN hosts answer quickly; keeping this tight also frees sockets sooner.
     private val scanClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
-            .connectTimeout(600, TimeUnit.MILLISECONDS)
-            .readTimeout(700, TimeUnit.MILLISECONDS)
+            .connectTimeout(400, TimeUnit.MILLISECONDS)
+            .readTimeout(500, TimeUnit.MILLISECONDS)
             .followRedirects(true)
             .connectionSpecs(listOf(ConnectionSpec.CLEARTEXT))
             .build()
@@ -143,6 +145,12 @@ object RouterDiscoveryService {
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
             ?: return emptyList()
         val activeNetwork = connectivityManager.activeNetwork ?: return emptyList()
+        val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return emptyList()
+        // Only sweep a LAN. Scanning a cellular /24 is wasteful and can look
+        // like abuse to the carrier.
+        if (!capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+            return emptyList()
+        }
         val linkProperties = connectivityManager.getLinkProperties(activeNetwork) ?: return emptyList()
         val ipv4 = linkProperties.linkAddresses
             .map { it.address }
@@ -160,14 +168,22 @@ object RouterDiscoveryService {
      * agnostic: any HTTP /index.asp that challenges with Basic auth, identifies
      * itself as httpd, or contains known Padavan UI markers is returned.
      */
+    /**
+     * Sweeps the phone's /24 with a deliberately small concurrency and a
+     * little jitter. A 32-way burst can momentarily overload weak routers
+     * that also serve DHCP/DNS for the LAN, causing browser DNS timeouts.
+     */
     suspend fun scanLocalSubnet(context: Context): List<String> = coroutineScope {
         val ips = localSubnetIps(context)
         if (ips.isEmpty())
             return@coroutineScope emptyList()
-        val limiter = Semaphore(32)
+        val limiter = Semaphore(12)
         ips.map { ip ->
             async(Dispatchers.IO) {
                 limiter.withPermit {
+                    // Spread ARP/HTTP probes instead of firing them in a tight
+                    // burst. This has negligible impact on total scan time.
+                    delay(5L + kotlin.random.Random.nextLong(20L))
                     if (probeWith(ip, scanClient)) ip else null
                 }
             }

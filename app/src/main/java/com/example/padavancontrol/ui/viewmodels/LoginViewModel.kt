@@ -202,6 +202,8 @@ class LoginViewModel(
 
                 // 2. Scan the phone's /24. This is required when the Padavan
                 // router is an AP and the DHCP gateway is a different device.
+                // The service uses a small concurrency and jitter so DNS/DHCP
+                // on the LAN is not disturbed by a large ARP burst.
                 _uiState.update { it.copy(scanStatusMessage = "Scanning local subnet...") }
                 val subnetIps = RouterDiscoveryService.scanLocalSubnet(appContext)
                 for (ip in subnetIps) {
@@ -218,12 +220,14 @@ class LoginViewModel(
                     }
                 }
 
-                // 3. Active scan via SSDP multicast fallback
-                _uiState.update { it.copy(scanStatusMessage = "Searching network via SSDP...") }
-                val ssdpIps = RouterDiscoveryService.discoverViaSsdp()
-                for (ip in ssdpIps) {
-                    if (!discovered.contains(ip)) {
-                        discovered.add(ip)
+                // 3. SSDP multicast fallback, only if nothing was found yet.
+                if (discovered.isEmpty()) {
+                    _uiState.update { it.copy(scanStatusMessage = "Searching network via SSDP...") }
+                    val ssdpIps = RouterDiscoveryService.discoverViaSsdp()
+                    for (ip in ssdpIps) {
+                        if (!discovered.contains(ip)) {
+                            discovered.add(ip)
+                        }
                     }
                 }
 

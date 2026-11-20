@@ -13,6 +13,7 @@ This fork adds:
 - Correct router name/IP display after discovery and login.
 - Correct 2.4 GHz / 5 GHz / wired device classification.
 - Model-aware port count (4 ports on RM-AC2100, 5 on Newifi D2).
+- Gentle subnet discovery that avoids disrupting router DNS/DHCP on weak hardware.
 - Manual IP and the saved router address continue to work as before.
 
 ---
