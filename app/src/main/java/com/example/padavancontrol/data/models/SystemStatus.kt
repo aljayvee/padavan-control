@@ -28,5 +28,7 @@ data class SystemStatus(
     val cpuNicePercent: Int = 0,
     val cpuIdlePercent: Int = 0,
     val cpuIrqPercent: Int = 0,
-    val cpuSirqPercent: Int = 0
+    val cpuSirqPercent: Int = 0,
+    val wifi2Enabled: Boolean = true,
+    val wifi5Enabled: Boolean = true
 )

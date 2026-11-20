@@ -94,7 +94,13 @@ class DashboardViewModel(
         val systemJob = launch {
             repository.getSystemStatus().collect { result ->
                 result.onSuccess { status ->
-                    _uiState.update { it.copy(systemStatus = status) }
+                    _uiState.update {
+                        it.copy(
+                            systemStatus = status,
+                            wifi2GEnabled = status.wifi2Enabled,
+                            wifi5GEnabled = status.wifi5Enabled
+                        )
+                    }
                 }
                 result.onFailure { error ->
                     localError = error.message ?: "Failed to fetch system status"

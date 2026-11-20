@@ -4,6 +4,14 @@ Welcome to the Padavan Control repository. This app is a native, modern Android 
 
 This document details the architecture, core codebase functionality, security precautions, tested hardware, and hardware-backed storage mechanisms built into the application to ensure secure, reliable administrative access.
 
+## Fork changes
+
+This fork adds:
+
+- Local `/24` subnet scanning, so an AP-mode Padavan router is found even when it is not the DHCP gateway.
+- Name-agnostic detection: any `index.asp` protected by HTTP Basic auth, or identified as `httpd`/Padavan-compatible, is listed.
+- Manual IP and the saved router address continue to work as before.
+
 ---
 
 ## Table of Contents

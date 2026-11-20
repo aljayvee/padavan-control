@@ -171,13 +171,31 @@ class LoginViewModel(
                         _uiState.update {
                             it.copy(
                                 discoveredRouters = discovered.toList(),
-                                scanStatusMessage = "Padavan Router found at $gatewayIp!"
+                                scanStatusMessage = "Router found at $gatewayIp!"
                             )
                         }
                     }
                 }
-                
-                // 2. Active scan via SSDP multicast fallback
+
+                // 2. Scan the phone's /24. This is required when the Padavan
+                // router is an AP and the DHCP gateway is a different device.
+                _uiState.update { it.copy(scanStatusMessage = "Scanning local subnet...") }
+                val subnetIps = RouterDiscoveryService.scanLocalSubnet(appContext)
+                for (ip in subnetIps) {
+                    if (!discovered.contains(ip)) {
+                        discovered.add(ip)
+                    }
+                }
+                if (discovered.isNotEmpty()) {
+                    _uiState.update {
+                        it.copy(
+                            discoveredRouters = discovered.toList(),
+                            scanStatusMessage = "Found ${discovered.size} router(s)..."
+                        )
+                    }
+                }
+
+                // 3. Active scan via SSDP multicast fallback
                 _uiState.update { it.copy(scanStatusMessage = "Searching network via SSDP...") }
                 val ssdpIps = RouterDiscoveryService.discoverViaSsdp()
                 for (ip in ssdpIps) {
@@ -193,9 +211,9 @@ class LoginViewModel(
                         scanStatusMessage = if (discovered.isNotEmpty()) {
                             "Scan complete. Found ${discovered.size} router(s)."
                         } else {
-                            "No Padavan Router detected on this Wi-Fi."
+                            "No router detected on this Wi-Fi."
                         },
-                        errorMessage = if (discovered.isEmpty()) "No Padavan Router detected on this Wi-Fi. Please enter IP manually." else null
+                        errorMessage = if (discovered.isEmpty()) "No router detected on this Wi-Fi. Please enter IP manually." else null
                     )
                 }
             } catch (e: Exception) {

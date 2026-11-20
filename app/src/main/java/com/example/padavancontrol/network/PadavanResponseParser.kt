@@ -83,6 +83,19 @@ object PadavanResponseParser {
                 val wifiTemp =
                     json.get("wifi_temp")?.asString?.replace("°C", "")?.trim()?.toFloatOrNull()
 
+                fun isRadioOn(name: String): Boolean {
+                    val radio = json.getAsJsonObject(name) ?: return true
+                    val state = radio.get("state") ?: return true
+                    return try {
+                        if (state.isJsonPrimitive && state.asJsonPrimitive.isNumber)
+                            state.asInt == 1
+                        else
+                            state.asString.trim() == "1"
+                    } catch (e: Exception) {
+                        true
+                    }
+                }
+
                 return SystemStatus(
                     cpuUsage = 0, // Will be computed at repository layer via delta checks
                     cpuTotal = cpuTotal,
@@ -103,7 +116,9 @@ object PadavanResponseParser {
                     cpuNiceTicks = cpuNiceTicks,
                     cpuIdleTicks = cpuIdleTicks,
                     cpuIrqTicks = cpuIrqTicks,
-                    cpuSirqTicks = cpuSirqTicks
+                    cpuSirqTicks = cpuSirqTicks,
+                    wifi2Enabled = isRadioOn("wifi2"),
+                    wifi5Enabled = isRadioOn("wifi5")
                 )
             }
         } catch (e: Exception) {

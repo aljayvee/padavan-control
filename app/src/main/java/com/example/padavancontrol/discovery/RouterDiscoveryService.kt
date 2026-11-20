@@ -5,11 +5,17 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.wifi.WifiManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.net.DatagramPacket
 import java.net.DatagramSocket
+import java.net.Inet4Address
 import java.net.InetAddress
 import java.net.SocketTimeoutException
 import java.security.cert.X509Certificate
@@ -60,6 +66,16 @@ object RouterDiscoveryService {
             .connectTimeout(2, TimeUnit.SECONDS)
             .readTimeout(2, TimeUnit.SECONDS)
             .connectionSpecs(listOf(RetrofitClient.customConnectionSpec, ConnectionSpec.CLEARTEXT))
+            .build()
+    }
+
+    // Short-timeout cleartext client used when sweeping the local subnet.
+    private val scanClient: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(600, TimeUnit.MILLISECONDS)
+            .readTimeout(700, TimeUnit.MILLISECONDS)
+            .followRedirects(true)
+            .connectionSpecs(listOf(ConnectionSpec.CLEARTEXT))
             .build()
     }
 
@@ -119,10 +135,56 @@ object RouterDiscoveryService {
     }
 
     /**
-     * Probes an IP to check if it's running Padavan firmware.
-     * Checks headers for Basic realm="RT-N56U" or HTML title/scripts.
+     * Returns the /24 candidates around the phone's current IPv4 address.
+     * This makes discovery work when the Padavan device is an AP rather than
+     * the DHCP gateway.
      */
-    suspend fun probeIp(ip: String): Boolean = withContext(Dispatchers.IO) {
+    fun localSubnetIps(context: Context): List<String> {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+            ?: return emptyList()
+        val activeNetwork = connectivityManager.activeNetwork ?: return emptyList()
+        val linkProperties = connectivityManager.getLinkProperties(activeNetwork) ?: return emptyList()
+        val ipv4 = linkProperties.linkAddresses
+            .map { it.address }
+            .filterIsInstance<Inet4Address>()
+            .firstOrNull() ?: return emptyList()
+        val parts = ipv4.hostAddress?.split(".") ?: return emptyList()
+        if (parts.size != 4)
+            return emptyList()
+        val prefix = parts.take(3).joinToString(".")
+        return (1..254).map { "$prefix.$it" }
+    }
+
+    /**
+     * Sweeps the phone's /24 in parallel. Detection is deliberately name
+     * agnostic: any HTTP /index.asp that challenges with Basic auth, identifies
+     * itself as httpd, or contains known Padavan UI markers is returned.
+     */
+    suspend fun scanLocalSubnet(context: Context): List<String> = coroutineScope {
+        val ips = localSubnetIps(context)
+        if (ips.isEmpty())
+            return@coroutineScope emptyList()
+        val limiter = Semaphore(32)
+        ips.map { ip ->
+            async(Dispatchers.IO) {
+                limiter.withPermit {
+                    if (probeWith(ip, scanClient)) ip else null
+                }
+            }
+        }.awaitAll()
+            .filterNotNull()
+            .sortedBy { it.substringAfterLast('.').toIntOrNull() ?: 0 }
+    }
+
+    suspend fun probeIp(ip: String): Boolean {
+        val client = if (isPrivateIp(ip)) permissiveClient else standardClient
+        return probeWith(ip, client)
+    }
+
+    /**
+     * Name-agnostic router probe.
+     */
+    private suspend fun probeWith(ip: String, client: OkHttpClient): Boolean = withContext(Dispatchers.IO) {
         val formattedUrl = if (ip.startsWith("http://") || ip.startsWith("https://")) {
             ip.removeSuffix("/") + "/index.asp"
         } else {
@@ -132,22 +194,32 @@ object RouterDiscoveryService {
             "$scheme$ip/index.asp"
         }
 
-        val client = if (isPrivateIp(ip)) permissiveClient else standardClient
-
         try {
             val request = Request.Builder().url(formattedUrl).build()
             client.newCall(request).execute().use { response ->
-                // Check header for Padavan realm (Auth challenge 401)
+                // Any Basic-auth challenge on index.asp is a candidate. The
+                // router's realm/name may differ between Padavan builds.
                 val authHeader = response.header("WWW-Authenticate")
-                if (authHeader != null && (authHeader.contains("RT-N56U", ignoreCase = true) || authHeader.contains("Padavan", ignoreCase = true))) {
+                if (authHeader != null && authHeader.contains("Basic", ignoreCase = true)) {
                     return@withContext true
                 }
 
-                // Or check the body (Unauthenticated HTTP 200)
+                // Some firmware serves index.asp without auth but identifies
+                // itself via the httpd server header.
+                val server = response.header("Server")
+                if (server != null && server.contains("httpd", ignoreCase = true)) {
+                    return@withContext true
+                }
+
                 if (response.isSuccessful) {
                     val body = response.body.string()
-                    if (body.contains("<title>Padavan</title>", ignoreCase = true) ||
+                    if (body.contains("<title>Padavan", ignoreCase = true) ||
+                        body.contains("Padavan", ignoreCase = true) ||
+                        body.contains("RT-N56U", ignoreCase = true) ||
+                        body.contains("RM-AC2100", ignoreCase = true) ||
                         body.contains("/bootstrap.js", ignoreCase = true) ||
+                        body.contains("/bootstrap/js/bootstrap.min.js", ignoreCase = true) ||
+                        body.contains("/state.js", ignoreCase = true) ||
                         body.contains("login.js", ignoreCase = true)) {
                         return@withContext true
                     }
