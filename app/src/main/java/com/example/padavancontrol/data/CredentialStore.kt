@@ -94,6 +94,12 @@ class CredentialStore(context: Context) {
 
     fun getHardwareModel(): String = sharedPreferences.getString("hardware_model", "") ?: ""
 
+    fun saveRouterName(name: String) {
+        sharedPreferences.edit().putString("router_name", name).apply()
+    }
+
+    fun getRouterName(): String = sharedPreferences.getString("router_name", "") ?: ""
+
     fun isOnboardingCompleted(): Boolean = sharedPreferences.getBoolean("onboarding_completed", false)
 
     fun setOnboardingCompleted(completed: Boolean) {

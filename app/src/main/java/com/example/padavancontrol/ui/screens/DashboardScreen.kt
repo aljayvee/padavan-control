@@ -68,7 +68,6 @@ import com.example.padavancontrol.data.models.PortLink
 import com.example.padavancontrol.data.models.SystemStatus
 import com.example.padavancontrol.data.models.WanStatus
 import com.example.padavancontrol.theme.ArcherTeal
-import com.example.padavancontrol.theme.ArcherWarning
 import com.example.padavancontrol.ui.viewmodels.DashboardEvent
 import com.example.padavancontrol.ui.viewmodels.DashboardViewModel
 
@@ -85,10 +84,17 @@ fun DashboardScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    val routerTitle = uiState.routerName.ifBlank {
+        uiState.hardwareModel.takeIf {
+            it.isNotBlank() && !it.equals("UNKNOWN", ignoreCase = true)
+        } ?: t("Padavan Router")
+    }
+
     var showCpuDetailsModal by remember { mutableStateOf(false) }
     var showRamDetailsModal by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
+        viewModel.refreshConnectionInfo()
         viewModel.events.collect { event ->
             when (event) {
                 is DashboardEvent.ShowToast -> {
@@ -119,7 +125,7 @@ fun DashboardScreen(
                 },
                 title = {
                     Column {
-                        Text("newifi D2", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                        Text(routerTitle, fontWeight = FontWeight.Bold, fontSize = 20.sp)
                         Text(
                             uiState.routerIp,
                             fontSize = 12.sp,
@@ -198,38 +204,8 @@ fun DashboardScreen(
                 }
 
                 // Hardware Mismatch Warning Card
-                uiState.hardwareWarning?.let { warningText ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .border(1.5.dp, ArcherWarning, RoundedCornerShape(16.dp)),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = ArcherWarning.copy(alpha = 0.08f)
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Warning,
-                                contentDescription = "Hardware Mismatch Warning",
-                                tint = ArcherWarning,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = warningText,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
-                }
+                // Port mapping is derived from the router's own port list, so
+                // no model-specific warning is needed.
 
                 // Internet Status Box
                 Card(
@@ -378,7 +354,7 @@ fun DashboardScreen(
         AlertDialog(
             onDismissRequest = { viewModel.dismissRebootDialog() },
             title = { Text(t("Reboot Router")) },
-            text = { Text(t("Are you sure you want to reboot the newifi D2 router? It will take about 40 seconds to power back on.")) },
+            text = { Text(t("Are you sure you want to reboot this router? It will take about 40 seconds to power back on.")) },
             confirmButton = {
                 TextButton(
                     onClick = { viewModel.confirmReboot() }
@@ -398,7 +374,7 @@ fun DashboardScreen(
         AlertDialog(
             onDismissRequest = { viewModel.dismissShutdownDialog() },
             title = { Text(t("Power Off Router")) },
-            text = { Text(t("Are you sure you want to power down the newifi D2 router? You will need to manually toggle the physical power switch on the device to start it again.")) },
+            text = { Text(t("Are you sure you want to power down this router? You will need to manually toggle the physical power switch on the device to start it again.")) },
             confirmButton = {
                 TextButton(
                     onClick = { viewModel.confirmShutdown() }

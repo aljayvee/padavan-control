@@ -50,6 +50,8 @@ class DashboardScreenTest {
         val stateFlow = MutableStateFlow(
             DashboardUiState(
                 routerIp = "192.168.2.1",
+                routerName = "RM-AC2100",
+                hardwareModel = "RM-AC2100",
                 systemStatus = systemStatus,
                 wanStatus = wanStatus,
                 lanLinks = emptyList(),
@@ -73,7 +75,7 @@ class DashboardScreenTest {
         }
 
         // Verify elements exist
-        composeTestRule.onNodeWithText("newifi D2").assertExists()
+        composeTestRule.onNodeWithText("RM-AC2100").assertExists()
         composeTestRule.onNodeWithText("192.168.2.1").assertExists()
         composeTestRule.onNodeWithText("Internet Connected").assertExists()
         composeTestRule.onNodeWithText("IP: 120.24.53.111 • Type: PPPoE").assertExists()

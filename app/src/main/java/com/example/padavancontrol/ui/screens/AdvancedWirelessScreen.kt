@@ -546,7 +546,7 @@ fun GlassHeaderCard(is5GHz: Boolean, section: String) {
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = t("Configuring Newifi D2 hardware interface parameters directly."),
+                    text = t("Configuring Padavan hardware interface parameters directly."),
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

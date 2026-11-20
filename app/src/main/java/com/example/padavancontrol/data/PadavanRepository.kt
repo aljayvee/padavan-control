@@ -32,12 +32,15 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.io.IOException
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 
 interface PadavanRepository {
-    suspend fun checkLogin(ip: String, user: String, pass: String): Boolean
+    suspend fun checkLogin(ip: String, user: String, pass: String, remember: Boolean = true): Boolean
+    suspend fun refreshRouterIdentity(): Boolean
     fun getSystemStatus(): Flow<Result<SystemStatus>>
     fun getWanStatus(): Flow<Result<WanStatus>>
     fun getLanClients(): Flow<Result<List<LanClient>>>
@@ -122,6 +125,12 @@ class DefaultPadavanRepository(
     private val activeFetches = ConcurrentHashMap<String, Deferred<com.example.padavancontrol.data.models.WanConfig?>>()
     private val repositoryScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
+    private val bandStatusMutex = Mutex()
+    private var cachedW2gStatusHtml = ""
+    private var cachedW5gStatusHtml = ""
+    private var bandStatusFetchedAt = 0L
+    private val bandStatusTtlMs = 30_000L
+
     private val wanPages = listOf(
         "Advanced_WAN_Content.asp",
         "Advanced_IPv6_Content.asp",
@@ -143,6 +152,9 @@ class DefaultPadavanRepository(
         loadedWanPages.clear()
         activeFetches.forEach { (_, deferred) -> deferred.cancel() }
         activeFetches.clear()
+        cachedW2gStatusHtml = ""
+        cachedW5gStatusHtml = ""
+        bandStatusFetchedAt = 0L
     }
 
     private var prevCpuTotal = 0L
@@ -163,7 +175,7 @@ class DefaultPadavanRepository(
         return RetrofitClient.getApiService()
     }
 
-    override suspend fun checkLogin(ip: String, user: String, pass: String): Boolean {
+    override suspend fun checkLogin(ip: String, user: String, pass: String, remember: Boolean): Boolean {
         try {
             RetrofitClient.initialize(
                 ipAddress = ip,
@@ -182,11 +194,17 @@ class DefaultPadavanRepository(
                 val hardwareModel = PadavanResponseParser.parseHardwareModel(bodyStr) ?: "UNKNOWN"
                 credentialStore.saveHardwareModel(hardwareModel)
 
+                // Save the router's display name (model from index.asp, or
+                // the configured computer name when the page exposes it).
+                PadavanResponseParser.parseRouterName(bodyStr)?.let { routerName ->
+                    credentialStore.saveRouterName(routerName)
+                }
+
                 credentialStore.saveCredentials(
                     user,
                     ip,
                     pass,
-                    true,
+                    remember,
                     credentialStore.isUseBiometric()
                 )
                 clearAllCaches()
@@ -199,6 +217,27 @@ class DefaultPadavanRepository(
             throw e // Re-throw to show detailed network error to the user
         }
         return false
+    }
+
+    override suspend fun refreshRouterIdentity(): Boolean {
+        return try {
+            val response = getService().checkLogin()
+            if (response.isSuccessful) {
+                val bodyStr = response.body() ?: return false
+                PadavanResponseParser.parseHardwareModel(bodyStr)?.let { model ->
+                    credentialStore.saveHardwareModel(model)
+                }
+                PadavanResponseParser.parseRouterName(bodyStr)?.let { name ->
+                    credentialStore.saveRouterName(name)
+                }
+                true
+            } else {
+                false
+            }
+        } catch (e: Exception) {
+            // Keep the previously stored identity if the router is unreachable.
+            false
+        }
     }
 
     override fun getSystemStatus(): Flow<Result<SystemStatus>> = flow {
@@ -285,25 +324,55 @@ class DefaultPadavanRepository(
         }
     }.flowOn(Dispatchers.IO)
 
+    /**
+     * Fetches the per-band station pages at most once every 30 seconds. The
+     * wireless map embedded in `device-map/clients.asp` is enough to know a
+     * client is wireless; these pages only add band information, so polling
+     * them every 5 seconds is unnecessary.
+     */
+    private suspend fun getBandStatusPages(): Pair<String, String> = bandStatusMutex.withLock {
+        val now = System.currentTimeMillis()
+        if (bandStatusFetchedAt > 0 && now - bandStatusFetchedAt < bandStatusTtlMs) {
+            return@withLock cachedW2gStatusHtml to cachedW5gStatusHtml
+        }
+
+        val (w2gHtml, w5gHtml) = coroutineScope {
+            val w2gDeferred = async {
+                try {
+                    val response = getService().getPageContent("Main_WStatus2g_Content.asp")
+                    if (response.isSuccessful) response.body() ?: "" else ""
+                } catch (e: Exception) {
+                    ""
+                }
+            }
+            val w5gDeferred = async {
+                try {
+                    val response = getService().getPageContent("Main_WStatus_Content.asp")
+                    if (response.isSuccessful) response.body() ?: "" else ""
+                } catch (e: Exception) {
+                    ""
+                }
+            }
+            w2gDeferred.await() to w5gDeferred.await()
+        }
+
+        cachedW2gStatusHtml = w2gHtml
+        cachedW5gStatusHtml = w5gHtml
+        bandStatusFetchedAt = System.currentTimeMillis()
+        w2gHtml to w5gHtml
+    }
+
     override fun getLanClients(): Flow<Result<List<LanClient>>> = flow {
         try {
             coroutineScope {
                 val clientsDeferred = async { getService().getLanClients() }
-                val w2gDeferred = async {
-                    try { getService().getPageContent("Main_WStatus2g_Content.asp") } catch (e: Exception) { null }
-                }
-                val w5gDeferred = async {
-                    try { getService().getPageContent("Main_WStatus_Content.asp") } catch (e: Exception) { null }
-                }
+                val bandPagesDeferred = async { getBandStatusPages() }
 
                 val clientsResponse = clientsDeferred.await()
-                val w2gResponse = w2gDeferred.await()
-                val w5gResponse = w5gDeferred.await()
+                val (w2gHtml, w5gHtml) = bandPagesDeferred.await()
 
                 if (clientsResponse.isSuccessful && clientsResponse.body() != null) {
                     val clientsHtml = clientsResponse.body()!!
-                    val w2gHtml = w2gResponse?.body() ?: ""
-                    val w5gHtml = w5gResponse?.body() ?: ""
                     val clients = PadavanResponseParser.parseLanClients(clientsHtml, w2gHtml, w5gHtml)
                     emit(Result.success(clients))
                 } else {

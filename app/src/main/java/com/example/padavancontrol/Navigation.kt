@@ -76,7 +76,8 @@ import com.example.padavancontrol.ui.screens.SplashLoadingScreen
 import com.example.padavancontrol.network.RetrofitClient
 
 import com.example.padavancontrol.ui.viewmodels.AppViewModelFactory
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 
 sealed interface AppInitState {
     object Loading : AppInitState
@@ -85,6 +86,30 @@ sealed interface AppInitState {
         val repository: DefaultPadavanRepository,
         val settingsDataStore: SettingsDataStore
     ) : AppInitState
+}
+
+/**
+ * Lazily resolves activity-scoped ViewModels. This keeps every ViewModel
+ * available to its screen while avoiding construction of all 16 of them at
+ * app startup.
+ */
+private class AppViewModels(provider: ViewModelProvider) {
+    val login: LoginViewModel by lazy { provider[LoginViewModel::class.java] }
+    val dashboard: DashboardViewModel by lazy { provider[DashboardViewModel::class.java] }
+    val settings: SettingsViewModel by lazy { provider[SettingsViewModel::class.java] }
+    val devices: DevicesViewModel by lazy { provider[DevicesViewModel::class.java] }
+    val traffic: TrafficViewModel by lazy { provider[TrafficViewModel::class.java] }
+    val shellConsole: ShellConsoleViewModel by lazy { provider[ShellConsoleViewModel::class.java] }
+    val logViewer: LogViewerViewModel by lazy { provider[LogViewerViewModel::class.java] }
+    val hardwareInfo: HardwareInfoViewModel by lazy { provider[HardwareInfoViewModel::class.java] }
+    val advancedWireless: AdvancedWirelessViewModel by lazy { provider[AdvancedWirelessViewModel::class.java] }
+    val advancedLan: AdvancedLanViewModel by lazy { provider[AdvancedLanViewModel::class.java] }
+    val advancedWan: AdvancedWanViewModel by lazy { provider[AdvancedWanViewModel::class.java] }
+    val advancedFirewall: AdvancedFirewallViewModel by lazy { provider[AdvancedFirewallViewModel::class.java] }
+    val advancedUsb: AdvancedUsbViewModel by lazy { provider[AdvancedUsbViewModel::class.java] }
+    val advancedAdmin: AdvancedAdminViewModel by lazy { provider[AdvancedAdminViewModel::class.java] }
+    val advancedScript: AdvancedScriptViewModel by lazy { provider[AdvancedScriptViewModel::class.java] }
+    val advancedVpn: AdvancedVpnViewModel by lazy { provider[AdvancedVpnViewModel::class.java] }
 }
 
 @Composable
@@ -131,23 +156,13 @@ fun MainNavigationContent(
         }
     }
 
-    val loginViewModel: LoginViewModel = viewModel(factory = factory)
-    val dashboardViewModel: DashboardViewModel = viewModel(factory = factory)
-    val settingsViewModel: SettingsViewModel = viewModel(factory = factory)
-    val devicesViewModel: DevicesViewModel = viewModel(factory = factory)
-    val trafficViewModel: TrafficViewModel = viewModel(factory = factory)
-    val shellConsoleViewModel: ShellConsoleViewModel = viewModel(factory = factory)
-    val logViewerViewModel: LogViewerViewModel = viewModel(factory = factory)
-
-    val advancedWirelessViewModel: AdvancedWirelessViewModel = viewModel(factory = factory)
-    val advancedLanViewModel: AdvancedLanViewModel = viewModel(factory = factory)
-    val advancedWanViewModel: AdvancedWanViewModel = viewModel(factory = factory)
-    val advancedFirewallViewModel: AdvancedFirewallViewModel = viewModel(factory = factory)
-    val advancedUsbViewModel: AdvancedUsbViewModel = viewModel(factory = factory)
-    val advancedAdminViewModel: AdvancedAdminViewModel = viewModel(factory = factory)
-    val advancedScriptViewModel: AdvancedScriptViewModel = viewModel(factory = factory)
-    val advancedVpnViewModel: AdvancedVpnViewModel = viewModel(factory = factory)
-    val hardwareInfoViewModel: HardwareInfoViewModel = viewModel(factory = factory)
+    val viewModelStoreOwner = checkNotNull(LocalViewModelStoreOwner.current) {
+        "No ViewModelStoreOwner available for Padavan Control"
+    }
+    val viewModelProvider = remember(viewModelStoreOwner, factory) {
+        ViewModelProvider(viewModelStoreOwner, factory)
+    }
+    val vms = remember(viewModelProvider) { AppViewModels(viewModelProvider) }
 
     val startKey =
         if (credentialStore.isRememberCredentials() && credentialStore.getPassword().isNotEmpty()) {
@@ -172,7 +187,7 @@ fun MainNavigationContent(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(currentKey) {
         drawerState.close()
     }
 
@@ -272,7 +287,7 @@ fun MainNavigationContent(
                 entryProvider = androidx.navigation3.runtime.entryProvider {
                 entry<Login> {
                     LoginScreen(
-                        viewModel = loginViewModel,
+                        viewModel = vms.login,
                         onLoginSuccess = {
                             backStack.clear()
                             backStack.add(Dashboard)
@@ -282,7 +297,7 @@ fun MainNavigationContent(
                 }
                 entry<Dashboard> {
                     DashboardScreen(
-                        viewModel = dashboardViewModel,
+                        viewModel = vms.dashboard,
                         onNavigateToSettings = {
                             backStack.add(Settings)
                         },
@@ -300,7 +315,7 @@ fun MainNavigationContent(
                 }
                 entry<Devices> {
                     DevicesScreen(
-                        viewModel = devicesViewModel,
+                        viewModel = vms.devices,
                         onMenuClick = {
                             scope.launch { drawerState.open() }
                         },
@@ -309,7 +324,7 @@ fun MainNavigationContent(
                 }
                 entry<Traffic> {
                     TrafficScreen(
-                        viewModel = trafficViewModel,
+                        viewModel = vms.traffic,
                         onMenuClick = {
                             scope.launch { drawerState.open() }
                         },
@@ -318,7 +333,7 @@ fun MainNavigationContent(
                 }
                 entry<HardwareInfo> {
                     HardwareInfoScreen(
-                        viewModel = hardwareInfoViewModel,
+                        viewModel = vms.hardwareInfo,
                         onMenuClick = {
                             scope.launch { drawerState.open() }
                         },
@@ -327,7 +342,7 @@ fun MainNavigationContent(
                 }
                 entry<Settings> {
                     SettingsScreen(
-                        viewModel = settingsViewModel,
+                        viewModel = vms.settings,
                         onLogout = {
                             credentialStore.clearCredentials()
                             backStack.clear()
@@ -341,7 +356,7 @@ fun MainNavigationContent(
                 }
                 entry<ShellConsole> {
                     ShellConsoleScreen(
-                        viewModel = shellConsoleViewModel,
+                        viewModel = vms.shellConsole,
                         onNavigateBack = {
                             if (backStack.size > 1) {
                                 backStack.removeLastOrNull()
@@ -352,7 +367,7 @@ fun MainNavigationContent(
                 }
                 entry<LogViewer> {
                     LogViewerScreen(
-                        viewModel = logViewerViewModel,
+                        viewModel = vms.logViewer,
                         onNavigateBack = {
                             if (backStack.size > 1) {
                                 backStack.removeLastOrNull()
@@ -363,67 +378,67 @@ fun MainNavigationContent(
                 }
                 
                 // Wireless 2.4GHz
-                entry<Wifi2gGeneral> { AdvancedWirelessScreen(is5GHz = false, section = "General", viewModel = advancedWirelessViewModel, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
-                entry<Wifi2gGuest> { AdvancedWirelessScreen(is5GHz = false, section = "Guest", viewModel = advancedWirelessViewModel, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
-                entry<Wifi2gBridge> { AdvancedWirelessScreen(is5GHz = false, section = "Bridge", viewModel = advancedWirelessViewModel, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
-                entry<Wifi2gMacFilter> { AdvancedWirelessScreen(is5GHz = false, section = "MAC Filter", viewModel = advancedWirelessViewModel, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
-                entry<Wifi2gRadius> { AdvancedWirelessScreen(is5GHz = false, section = "RADIUS", viewModel = advancedWirelessViewModel, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
-                entry<Wifi2gProfessional> { AdvancedWirelessScreen(is5GHz = false, section = "Professional", viewModel = advancedWirelessViewModel, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<Wifi2gGeneral> { AdvancedWirelessScreen(is5GHz = false, section = "General", viewModel = vms.advancedWireless, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<Wifi2gGuest> { AdvancedWirelessScreen(is5GHz = false, section = "Guest", viewModel = vms.advancedWireless, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<Wifi2gBridge> { AdvancedWirelessScreen(is5GHz = false, section = "Bridge", viewModel = vms.advancedWireless, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<Wifi2gMacFilter> { AdvancedWirelessScreen(is5GHz = false, section = "MAC Filter", viewModel = vms.advancedWireless, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<Wifi2gRadius> { AdvancedWirelessScreen(is5GHz = false, section = "RADIUS", viewModel = vms.advancedWireless, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<Wifi2gProfessional> { AdvancedWirelessScreen(is5GHz = false, section = "Professional", viewModel = vms.advancedWireless, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
                 
                 // Wireless 5GHz
-                entry<Wifi5gGeneral> { AdvancedWirelessScreen(is5GHz = true, section = "General", viewModel = advancedWirelessViewModel, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
-                entry<Wifi5gGuest> { AdvancedWirelessScreen(is5GHz = true, section = "Guest", viewModel = advancedWirelessViewModel, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
-                entry<Wifi5gBridge> { AdvancedWirelessScreen(is5GHz = true, section = "Bridge", viewModel = advancedWirelessViewModel, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
-                entry<Wifi5gMacFilter> { AdvancedWirelessScreen(is5GHz = true, section = "MAC Filter", viewModel = advancedWirelessViewModel, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
-                entry<Wifi5gRadius> { AdvancedWirelessScreen(is5GHz = true, section = "RADIUS", viewModel = advancedWirelessViewModel, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
-                entry<Wifi5gProfessional> { AdvancedWirelessScreen(is5GHz = true, section = "Professional", viewModel = advancedWirelessViewModel, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<Wifi5gGeneral> { AdvancedWirelessScreen(is5GHz = true, section = "General", viewModel = vms.advancedWireless, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<Wifi5gGuest> { AdvancedWirelessScreen(is5GHz = true, section = "Guest", viewModel = vms.advancedWireless, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<Wifi5gBridge> { AdvancedWirelessScreen(is5GHz = true, section = "Bridge", viewModel = vms.advancedWireless, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<Wifi5gMacFilter> { AdvancedWirelessScreen(is5GHz = true, section = "MAC Filter", viewModel = vms.advancedWireless, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<Wifi5gRadius> { AdvancedWirelessScreen(is5GHz = true, section = "RADIUS", viewModel = vms.advancedWireless, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<Wifi5gProfessional> { AdvancedWirelessScreen(is5GHz = true, section = "Professional", viewModel = vms.advancedWireless, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
                 
                 // LAN
-                entry<LanIp> { AdvancedLanScreen("IP", advancedLanViewModel, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
-                entry<LanDhcp> { AdvancedLanScreen("DHCP", advancedLanViewModel, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
-                entry<LanRoute> { AdvancedLanScreen("Route", advancedLanViewModel, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
-                entry<LanIptv> { AdvancedLanScreen("IPTV", advancedLanViewModel, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
-                entry<LanSwitch> { AdvancedLanScreen("Switch", advancedLanViewModel, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
-                entry<LanWol> { AdvancedLanScreen("WOL", advancedLanViewModel, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<LanIp> { AdvancedLanScreen("IP", vms.advancedLan, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<LanDhcp> { AdvancedLanScreen("DHCP", vms.advancedLan, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<LanRoute> { AdvancedLanScreen("Route", vms.advancedLan, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<LanIptv> { AdvancedLanScreen("IPTV", vms.advancedLan, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<LanSwitch> { AdvancedLanScreen("Switch", vms.advancedLan, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<LanWol> { AdvancedLanScreen("WOL", vms.advancedLan, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
                 
                 // WAN
-                entry<WanConnection> { AdvancedWanScreen("Connection", advancedWanViewModel, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
-                entry<WanIpv6> { AdvancedWanScreen("IPv6", advancedWanViewModel, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
-                entry<WanPortForward> { AdvancedWanScreen("PortForward", advancedWanViewModel, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
-                entry<WanDmz> { AdvancedWanScreen("DMZ", advancedWanViewModel, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
-                entry<WanDdns> { AdvancedWanScreen("DDNS", advancedWanViewModel, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<WanConnection> { AdvancedWanScreen("Connection", vms.advancedWan, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<WanIpv6> { AdvancedWanScreen("IPv6", vms.advancedWan, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<WanPortForward> { AdvancedWanScreen("PortForward", vms.advancedWan, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<WanDmz> { AdvancedWanScreen("DMZ", vms.advancedWan, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<WanDdns> { AdvancedWanScreen("DDNS", vms.advancedWan, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
                 
                 // Firewall
-                entry<FirewallGeneral> { AdvancedFirewallScreen("General", viewModel = advancedFirewallViewModel, repository = repository, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
-                entry<FirewallNetfilter> { AdvancedFirewallScreen("Netfilter", viewModel = advancedFirewallViewModel, repository = repository, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
-                entry<FirewallUrlFilter> { AdvancedFirewallScreen("URLFilter", viewModel = advancedFirewallViewModel, repository = repository, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
-                entry<FirewallMacFilter> { AdvancedFirewallScreen("MACFilter", viewModel = advancedFirewallViewModel, repository = repository, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
-                entry<FirewallServicesFilter> { AdvancedFirewallScreen("ServicesFilter", viewModel = advancedFirewallViewModel, repository = repository, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
-                entry<FirewallDnsIpsetFilter> { AdvancedFirewallScreen("DnsIpsetFilter", viewModel = advancedFirewallViewModel, repository = repository, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<FirewallGeneral> { AdvancedFirewallScreen("General", viewModel = vms.advancedFirewall, repository = repository, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<FirewallNetfilter> { AdvancedFirewallScreen("Netfilter", viewModel = vms.advancedFirewall, repository = repository, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<FirewallUrlFilter> { AdvancedFirewallScreen("URLFilter", viewModel = vms.advancedFirewall, repository = repository, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<FirewallMacFilter> { AdvancedFirewallScreen("MACFilter", viewModel = vms.advancedFirewall, repository = repository, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<FirewallServicesFilter> { AdvancedFirewallScreen("ServicesFilter", viewModel = vms.advancedFirewall, repository = repository, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<FirewallDnsIpsetFilter> { AdvancedFirewallScreen("DnsIpsetFilter", viewModel = vms.advancedFirewall, repository = repository, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
                 
                 // USB Application
-                entry<UsbCommon> { AdvancedUsbScreen("Common", viewModel = advancedUsbViewModel, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
-                entry<UsbSamba> { AdvancedUsbScreen("Samba", viewModel = advancedUsbViewModel, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
-                entry<UsbFtp> { AdvancedUsbScreen("FTP", viewModel = advancedUsbViewModel, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
-                entry<UsbModem> { AdvancedUsbScreen("Modem", viewModel = advancedUsbViewModel, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
-                entry<UsbPrinter> { AdvancedUsbScreen("Printer", viewModel = advancedUsbViewModel, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<UsbCommon> { AdvancedUsbScreen("Common", viewModel = vms.advancedUsb, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<UsbSamba> { AdvancedUsbScreen("Samba", viewModel = vms.advancedUsb, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<UsbFtp> { AdvancedUsbScreen("FTP", viewModel = vms.advancedUsb, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<UsbModem> { AdvancedUsbScreen("Modem", viewModel = vms.advancedUsb, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<UsbPrinter> { AdvancedUsbScreen("Printer", viewModel = vms.advancedUsb, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
                 
                 // Administration
-                entry<AdminSystem> { AdvancedAdminScreen("System", viewModel = advancedAdminViewModel, repository = repository, onNavigateBack = { backStack.removeLastOrNull() }, settingsDataStore = settingsDataStore, modifier = Modifier) }
-                entry<AdminServices> { AdvancedAdminScreen("Services", viewModel = advancedAdminViewModel, repository = repository, onNavigateBack = { backStack.removeLastOrNull() }, onNavigateToTtydWebShell = { backStack.add(TtydWebShell) }, modifier = Modifier) }
-                entry<AdminOpMode> { AdvancedAdminScreen("OpMode", viewModel = advancedAdminViewModel, repository = repository, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
-                entry<AdminFirmware> { AdvancedAdminScreen("Firmware", viewModel = advancedAdminViewModel, repository = repository, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
-                entry<AdminSettingsBackup> { AdvancedAdminScreen("Backup", viewModel = advancedAdminViewModel, repository = repository, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
-                entry<AdminConsole> { ShellConsoleScreen(viewModel = shellConsoleViewModel, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<AdminSystem> { AdvancedAdminScreen("System", viewModel = vms.advancedAdmin, repository = repository, onNavigateBack = { backStack.removeLastOrNull() }, settingsDataStore = settingsDataStore, modifier = Modifier) }
+                entry<AdminServices> { AdvancedAdminScreen("Services", viewModel = vms.advancedAdmin, repository = repository, onNavigateBack = { backStack.removeLastOrNull() }, onNavigateToTtydWebShell = { backStack.add(TtydWebShell) }, modifier = Modifier) }
+                entry<AdminOpMode> { AdvancedAdminScreen("OpMode", viewModel = vms.advancedAdmin, repository = repository, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<AdminFirmware> { AdvancedAdminScreen("Firmware", viewModel = vms.advancedAdmin, repository = repository, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<AdminSettingsBackup> { AdvancedAdminScreen("Backup", viewModel = vms.advancedAdmin, repository = repository, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<AdminConsole> { ShellConsoleScreen(viewModel = vms.shellConsole, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
                 entry<TtydWebShell> { TtydWebShellScreen(onNavigateBack = { backStack.removeLastOrNull() }, repository = repository, modifier = Modifier) }
-                entry<AdminButtonsLed> { AdvancedAdminScreen("ButtonsLed", viewModel = advancedAdminViewModel, repository = repository, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<AdminButtonsLed> { AdvancedAdminScreen("ButtonsLed", viewModel = vms.advancedAdmin, repository = repository, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
                 
                 // Customization
-                entry<CustomScripts> { AdvancedScriptScreen("Scripts", viewModel = advancedScriptViewModel, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
-                entry<CustomDetector> { AdvancedScriptScreen("Detector", viewModel = advancedScriptViewModel, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<CustomScripts> { AdvancedScriptScreen("Scripts", viewModel = vms.advancedScript, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<CustomDetector> { AdvancedScriptScreen("Detector", viewModel = vms.advancedScript, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
                 
                 // VPN
-                entry<AdvancedVpn> { AdvancedVpnScreen(viewModel = advancedVpnViewModel, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
+                entry<AdvancedVpn> { AdvancedVpnScreen(viewModel = vms.advancedVpn, onNavigateBack = { backStack.removeLastOrNull() }, modifier = Modifier) }
             }
         )
     }

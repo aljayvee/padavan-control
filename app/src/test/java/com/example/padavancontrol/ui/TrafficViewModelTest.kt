@@ -42,6 +42,7 @@ class TrafficViewModelTest {
     fun testInitialStateAndCalculations() = runTest(testDispatcher) {
         val vm = TrafficViewModel(repository)
         viewModel = vm
+        vm.setPollingEnabled(true)
 
         // Force polling execution
         testDispatcher.scheduler.runCurrent()

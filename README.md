@@ -10,6 +10,9 @@ This fork adds:
 
 - Local `/24` subnet scanning, so an AP-mode Padavan router is found even when it is not the DHCP gateway.
 - Name-agnostic detection: any `index.asp` protected by HTTP Basic auth, or identified as `httpd`/Padavan-compatible, is listed.
+- Correct router name/IP display after discovery and login.
+- Correct 2.4 GHz / 5 GHz / wired device classification.
+- Model-aware port count (4 ports on RM-AC2100, 5 on Newifi D2).
 - Manual IP and the saved router address continue to work as before.
 
 ---

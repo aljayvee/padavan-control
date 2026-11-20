@@ -121,6 +121,35 @@ class PadavanResponseParserTest {
     }
 
     @Test
+    fun testParseLanClients_normalizesWirelessMacFormats() {
+        val html = """
+            var ipmonitor = [
+                ['192.168.2.20', 'aa-bb-cc-dd-ee-01', 'Laptop', '0', '1', '0'],
+                ['192.168.2.21', 'AABBCCDDEE02', 'Phone', '0', '1', '0'],
+                ['192.168.2.22', 'AA:BB:CC:DD:EE:03', 'CablePC', '0', '1', '0']
+            ];
+            var wireless = {'AA:BB:CC:DD:EE:01':-48, 'AA:BB:CC:DD:EE:02':-61};
+            var list_of_BlockedClient = [['AA:BB:CC:DD:EE:03']];
+        """.trimIndent()
+
+        val clients = PadavanResponseParser.parseLanClients(html)
+
+        val laptop = clients.find { it.hostname == "Laptop" }!!
+        assertEquals("AA:BB:CC:DD:EE:01", laptop.macAddress)
+        assertEquals("Wireless", laptop.connectionType)
+        assertEquals("-48", laptop.rssi)
+
+        val phone = clients.find { it.hostname == "Phone" }!!
+        assertEquals("AA:BB:CC:DD:EE:02", phone.macAddress)
+        assertEquals("Wireless", phone.connectionType)
+        assertEquals("-61", phone.rssi)
+
+        val wiredPc = clients.find { it.hostname == "CablePC" }!!
+        assertEquals("Wired", wiredPc.connectionType)
+        assertEquals(0, wiredPc.blockIndex)
+    }
+
+    @Test
     fun testParseHardwareModel_variousFormats() {
         val htmlDoubleQuotes = """
             var product_id = "NEWIFI3";
@@ -157,5 +186,52 @@ class PadavanResponseParserTest {
             var something_else = "NEWIFI3";
         """.trimIndent()
         assertNull(PadavanResponseParser.parseHardwareModel(htmlNone))
+    }
+
+    @Test
+    fun testParseRouterName_fromPageTitle() {
+        val newifi = """
+            <!DOCTYPE html>
+            <html>
+            <head><title>NEWIFI3 Wireless Router</title></head>
+            <body></body>
+            </html>
+        """.trimIndent()
+        assertEquals("NEWIFI3", PadavanResponseParser.parseRouterName(newifi))
+
+        val rmAc2100 = """
+            <html><head><title>RM-AC2100 Wireless Router - System</title></head></html>
+        """.trimIndent()
+        assertEquals("RM-AC2100", PadavanResponseParser.parseRouterName(rmAc2100))
+
+        val withEntity = """
+            <html><head><title>Home &amp; Office Wireless Router</title></head></html>
+        """.trimIndent()
+        assertEquals("Home & Office", PadavanResponseParser.parseRouterName(withEntity))
+    }
+
+    @Test
+    fun testParseRouterName_prefersConfiguredComputerName() {
+        val html = """
+            <title>NEWIFI3 Wireless Router - System</title>
+            <input type="hidden" name="computer_name2" value="Living Room Router">
+        """.trimIndent()
+        assertEquals("Living Room Router", PadavanResponseParser.parseRouterName(html))
+
+        val reversedAttributes = """
+            <input type="hidden" value="Attic AP" name="computer_name2">
+        """.trimIndent()
+        assertEquals("Attic AP", PadavanResponseParser.parseRouterName(reversedAttributes))
+    }
+
+    @Test
+    fun testParseRouterName_ignoresPlaceholdersAndDefaults() {
+        val placeholder = """<html><head><title><#Web_Title#></title></head></html>"""
+        assertNull(PadavanResponseParser.parseRouterName(placeholder))
+
+        val defaultName = """<html><head><title>Router</title></head></html>"""
+        assertNull(PadavanResponseParser.parseRouterName(defaultName))
+
+        assertNull(PadavanResponseParser.parseRouterName("<html><head></head></html>"))
     }
 }

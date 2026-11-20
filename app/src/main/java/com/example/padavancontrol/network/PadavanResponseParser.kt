@@ -23,9 +23,18 @@ object PadavanResponseParser {
     @Suppress("DEPRECATION")
     private val gson = com.google.gson.GsonBuilder().setLenient().create()
 
+    /** Cache compiled regex patterns used on every polling cycle. */
+    private val patternCache = java.util.concurrent.ConcurrentHashMap<String, Pattern>()
+
+    private fun cachedPattern(regex: String, flags: Int = 0): Pattern =
+        patternCache.computeIfAbsent("$flags\u0000$regex") { Pattern.compile(regex, flags) }
+
+    private val nonHexRegex = Regex("[^0-9A-F]")
+    private val hexValueRegex = Regex(":\\s*(0x[0-9a-fA-F]+)")
+
     fun parseSystemStatus(html: String): SystemStatus? {
         try {
-            val pattern = Pattern.compile("var\\s+si_new\\s*=\\s*(\\{.*?\\});", Pattern.DOTALL)
+            val pattern = cachedPattern("var\\s+si_new\\s*=\\s*(\\{.*?\\});", Pattern.DOTALL)
             val matcher = pattern.matcher(html)
             if (matcher.find()) {
                 var jsonStr = matcher.group(1) ?: "{}"
@@ -33,7 +42,7 @@ object PadavanResponseParser {
                 
                 // Padavan firmware outputs hex numbers (e.g., 0x4a) unquoted, which breaks Gson.
                 // We wrap them in quotes so Gson parses them as Strings.
-                jsonStr = jsonStr.replace(Regex(":\\s*(0x[0-9a-fA-F]+)"), ": \"$1\"")
+                jsonStr = jsonStr.replace(hexValueRegex, ": \"$1\"")
 
                 val json = gson.fromJson(jsonStr, JsonObject::class.java)
 
@@ -127,6 +136,21 @@ object PadavanResponseParser {
         return null
     }
 
+    /**
+     * Normalizes MAC addresses from the many formats used by Padavan pages:
+     * upper/lower case, colon/dash separators, or a bare 12-character hex
+     * string. This is required for reliable wireless-vs-wired classification.
+     */
+    private fun normalizeMacAddress(value: String): String {
+        val trimmed = value.trim().uppercase()
+        val hex = trimmed.replace(nonHexRegex, "")
+        return if (hex.length == 12) {
+            hex.chunked(2).joinToString(":")
+        } else {
+            trimmed.replace("-", ":")
+        }
+    }
+
     fun parseLanClients(html: String, w2gHtml: String = "", w5gHtml: String = ""): List<LanClient> {
         val clients = mutableListOf<LanClient>()
         try {
@@ -134,9 +158,9 @@ object PadavanResponseParser {
             fun extractMacs(txt: String): Set<String> {
                 if (txt.isEmpty()) return emptySet()
                 val set = mutableSetOf<String>()
-                val matcher = Pattern.compile("([0-9a-fA-F]{2}[:-]){5}([0-9a-fA-F]{2})").matcher(txt)
+                val matcher = cachedPattern("([0-9a-fA-F]{2}[:-]){5}([0-9a-fA-F]{2})").matcher(txt)
                 while (matcher.find()) {
-                    set.add(matcher.group().uppercase().replace("-", ":"))
+                    set.add(normalizeMacAddress(matcher.group()))
                 }
                 return set
             }
@@ -144,9 +168,11 @@ object PadavanResponseParser {
             val w2gMacs = extractMacs(w2gHtml)
             val w5gMacs = extractMacs(w5gHtml)
 
-            // Parse wireless map for RSSI
+            // Parse wireless map for RSSI. Keys can be upper/lowercase and
+            // some firmware builds omit or vary the separators, so normalize
+            // every MAC before using it as a lookup key.
             val wirelessMap = mutableMapOf<String, String>()
-            val wirelessPattern = Pattern.compile("var\\s+wireless\\s*=\\s*\\{(.*?)\\}\\s*;", Pattern.DOTALL)
+            val wirelessPattern = cachedPattern("var\\s+wireless\\s*=\\s*\\{(.*?)\\}\\s*;", Pattern.DOTALL)
             val wirelessMatcher = wirelessPattern.matcher(html)
             if (wirelessMatcher.find()) {
                 val wirelessContent = wirelessMatcher.group(1)?.trim() ?: ""
@@ -156,17 +182,28 @@ object PadavanResponseParser {
                         jsonStr = jsonStr.replace("'", "\"")
                         val jsonObject = gson.fromJson(jsonStr, com.google.gson.JsonObject::class.java)
                         for (key in jsonObject.keySet()) {
-                            wirelessMap[key] = jsonObject.get(key).asString
+                            wirelessMap[normalizeMacAddress(key)] = jsonObject.get(key).asString
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
+                    }
+
+                    // Fallback: extract MAC/rssi pairs even if the map is not
+                    // strict JSON (e.g. unquoted keys or trailing commas).
+                    val entryPattern = cachedPattern(
+                        "[\"']?([0-9A-Fa-f]{2}(?:[:_-][0-9A-Fa-f]{2}){5})[\"']?\\s*:\\s*(-?\\d+)"
+                    )
+                    val entryMatcher = entryPattern.matcher(wirelessContent)
+                    while (entryMatcher.find()) {
+                        val key = entryMatcher.group(1) ?: continue
+                        wirelessMap[normalizeMacAddress(key)] = entryMatcher.group(2) ?: ""
                     }
                 }
             }
 
             // Parse blocked clients
             val blockedMap = mutableMapOf<String, Int>()
-            val blockedPattern = Pattern.compile("var\\s+list_of_BlockedClient\\s*=\\s*\\[(.*?)\\]\\s*;", Pattern.DOTALL)
+            val blockedPattern = cachedPattern("var\\s+list_of_BlockedClient\\s*=\\s*\\[(.*?)\\]\\s*;", Pattern.DOTALL)
             val blockedMatcher = blockedPattern.matcher(html)
             if (blockedMatcher.find()) {
                 val blockedContent = blockedMatcher.group(1)?.trim() ?: ""
@@ -180,7 +217,7 @@ object PadavanResponseParser {
                             if (item.isJsonArray) {
                                 val arr = item.asJsonArray
                                 if (arr.size() > 0 && !arr[0].isJsonNull) {
-                                    blockedMap[arr[0].asString] = i
+                                    blockedMap[normalizeMacAddress(arr[0].asString)] = i
                                 }
                             }
                         }
@@ -191,7 +228,7 @@ object PadavanResponseParser {
             }
 
             val pattern =
-                Pattern.compile("var\\s+ipmonitor(?:_last)?\\s*=\\s*\\[(.*?)\\]\\s*;", Pattern.DOTALL)
+                cachedPattern("var\\s+ipmonitor(?:_last)?\\s*=\\s*\\[(.*?)\\]\\s*;", Pattern.DOTALL)
             val matcher = pattern.matcher(html)
             if (matcher.find()) {
                 val arrayContent = matcher.group(1)?.trim() ?: ""
@@ -207,16 +244,17 @@ object PadavanResponseParser {
                     val arr = item.asJsonArray
                     
                     val ip = if (arr.size() > 0 && !arr[0].isJsonNull) arr[0].asString else ""
-                    val mac = if (arr.size() > 1 && !arr[1].isJsonNull) arr[1].asString else ""
+                    val rawMac = if (arr.size() > 1 && !arr[1].isJsonNull) arr[1].asString else ""
+                    val mac = normalizeMacAddress(rawMac)
                     val hostname = if (arr.size() > 2 && !arr[2].isJsonNull) arr[2].asString else ""
                     
                     val rssi = wirelessMap[mac] ?: ""
+                    val isWireless = wirelessMap.containsKey(mac)
                     
-                    val clientMacUpper = mac.uppercase().replace("-", ":")
                     val connectionType = when {
-                        w5gMacs.contains(clientMacUpper) -> "5G"
-                        w2gMacs.contains(clientMacUpper) -> "2.4G"
-                        rssi.isNotEmpty() -> "2.4G"
+                        w5gMacs.contains(mac) -> "5G"
+                        w2gMacs.contains(mac) -> "2.4G"
+                        isWireless -> "Wireless"
                         else -> "Wired"
                     }
                     
@@ -246,12 +284,12 @@ object PadavanResponseParser {
         try {
             fun extractString(funcName: String): String {
                 val pattern =
-                    Pattern.compile("function\\s+$funcName\\(\\)\\s*\\{\\s*return\\s*'([^']*)';\\s*\\}")
+                    cachedPattern("function\\s+$funcName\\(\\)\\s*\\{\\s*return\\s*'([^']*)';\\s*\\}")
                 val matcher = pattern.matcher(html)
                 if (matcher.find()) return matcher.group(1) ?: ""
 
                 val patternDouble =
-                    Pattern.compile("function\\s+$funcName\\(\\)\\s*\\{\\s*return\\s*\"([^\"]*)\";\\s*\\}")
+                    cachedPattern("function\\s+$funcName\\(\\)\\s*\\{\\s*return\\s*\"([^\"]*)\";\\s*\\}")
                 val matcherDouble = patternDouble.matcher(html)
                 if (matcherDouble.find()) return matcherDouble.group(1) ?: ""
 
@@ -260,7 +298,7 @@ object PadavanResponseParser {
 
             fun extractLong(funcName: String): Long {
                 val pattern =
-                    Pattern.compile("function\\s+$funcName\\(\\)\\s*\\{\\s*return\\s*(\\d+);\\s*\\}")
+                    cachedPattern("function\\s+$funcName\\(\\)\\s*\\{\\s*return\\s*(\\d+);\\s*\\}")
                 val matcher = pattern.matcher(html)
                 if (matcher.find()) return matcher.group(1)?.toLongOrNull() ?: 0L
                 return 0L
@@ -303,11 +341,11 @@ object PadavanResponseParser {
                     val jsonStr = html.substring(startIdx, endIdx + 1)
                     
                     // Match each interface block: 'eth3':{rx:...,tx:...} or "eth3":{...}
-                    val blockPattern = Pattern.compile("['\"]([^'\"]+)['\"]\\s*:\\s*\\{([^}]+)\\}")
+                    val blockPattern = cachedPattern("['\"]([^'\"]+)['\"]\\s*:\\s*\\{([^}]+)\\}")
                     val blockMatcher = blockPattern.matcher(jsonStr)
                     
                     // Match individual keys inside the block: rx:0x123 or rx:123
-                    val valuePattern = Pattern.compile("([a-zA-Z_]+)\\s*:\\s*(0x[0-9a-fA-F]+|\\d+)", Pattern.CASE_INSENSITIVE)
+                    val valuePattern = cachedPattern("([a-zA-Z_]+)\\s*:\\s*(0x[0-9a-fA-F]+|\\d+)", Pattern.CASE_INSENSITIVE)
 
                     while (blockMatcher.find()) {
                         val iface = blockMatcher.group(1) ?: continue
@@ -348,7 +386,7 @@ object PadavanResponseParser {
         val speedMap = mutableMapOf<Int, String>()
         try {
             // Matches returns inside switch or if cases in the JS code
-            val pattern = Pattern.compile("(?:case\\s+(\\d+)|port\\s*==\\s*(\\d+)|idx\\s*==\\s*(\\d+)|idx\\s*===\\s*(\\d+))[^;]*?return\\s*['\"]([^'\"]*)['\"]", Pattern.DOTALL)
+            val pattern = cachedPattern("(?:case\\s+(\\d+)|port\\s*==\\s*(\\d+)|idx\\s*==\\s*(\\d+)|idx\\s*===\\s*(\\d+))[^;]*?return\\s*['\"]([^'\"]*)['\"]", Pattern.DOTALL)
             val matcher = pattern.matcher(html)
             while (matcher.find()) {
                 val idxStr = matcher.group(1) ?: matcher.group(2) ?: matcher.group(3) ?: matcher.group(4) ?: ""
@@ -362,9 +400,15 @@ object PadavanResponseParser {
             e.printStackTrace()
         }
         
-        // Define port names specifically for newifi D2 hardware mapping
-        val portNames = listOf("WAN", "LAN 1", "LAN 2", "LAN 3", "LAN 4")
-        for (i in 0..4) {
+        // Derive the port count from the router response instead of assuming a
+        // fixed 5-port switch. Padavan emits one `if(idx==N)` branch per
+        // physical port, so a 4-port RM-AC2100 correctly gets WAN + LAN1-3.
+        val maxIndex = speedMap.keys.maxOrNull()
+        val portCount = if (maxIndex != null) (maxIndex + 1).coerceIn(2, 8) else 5
+        val portNames = (0 until portCount).map { index ->
+            if (index == 0) "WAN" else "LAN $index"
+        }
+        for (i in portNames.indices) {
             val speed = speedMap[i] ?: "No link"
             val isConnected = speed.isNotEmpty() && !speed.contains("No link", ignoreCase = true)
             ports.add(PortLink(portNames[i], speed, isConnected))
@@ -393,16 +437,16 @@ object PadavanResponseParser {
                         val selectEnd = html.indexOf("</select>", tagEnd, ignoreCase = true)
                         if (selectEnd != -1) {
                             val selectContent = html.substring(tagEnd + 1, selectEnd)
-                            val optPattern = Pattern.compile("<option[^>]*?value=[\"']?([^\"'>\\s]*)[\"']?[^>]*?selected", Pattern.CASE_INSENSITIVE)
+                            val optPattern = cachedPattern("<option[^>]*?value=[\"']?([^\"'>\\s]*)[\"']?[^>]*?selected", Pattern.CASE_INSENSITIVE)
                             val optMatcher = optPattern.matcher(selectContent)
                             if (optMatcher.find()) return optMatcher.group(1) ?: ""
                             
-                            val firstOptPattern = Pattern.compile("<option[^>]*?value=[\"']?([^\"'>\\s]*)", Pattern.CASE_INSENSITIVE)
+                            val firstOptPattern = cachedPattern("<option[^>]*?value=[\"']?([^\"'>\\s]*)", Pattern.CASE_INSENSITIVE)
                             val firstOptMatcher = firstOptPattern.matcher(selectContent)
                             if (firstOptMatcher.find()) return firstOptMatcher.group(1) ?: ""
                         }
                     } else {
-                        val valueMatch = Pattern.compile("value=(?:[\"']([^\"']*)[\"']|([^\"'>\\s]*))", Pattern.CASE_INSENSITIVE).matcher(tagStr)
+                        val valueMatch = cachedPattern("value=(?:[\"']([^\"']*)[\"']|([^\"'>\\s]*))", Pattern.CASE_INSENSITIVE).matcher(tagStr)
                         if (valueMatch.find()) {
                             return valueMatch.group(1) ?: valueMatch.group(2) ?: ""
                         }
@@ -415,7 +459,7 @@ object PadavanResponseParser {
             if (jsPrefix.contains("document.form.")) {
                 val lineEnd = html.indexOf("\n", idx).takeIf { it != -1 } ?: html.length
                 val lineStr = html.substring(idx, lineEnd)
-                val jsMatch = Pattern.compile("\\.value\\s*=\\s*['\"](.*?)['\"]", Pattern.CASE_INSENSITIVE).matcher(lineStr)
+                val jsMatch = cachedPattern("\\.value\\s*=\\s*['\"](.*?)['\"]", Pattern.CASE_INSENSITIVE).matcher(lineStr)
                 if (jsMatch.find()) {
                     return jsMatch.group(1) ?: ""
                 }
@@ -426,7 +470,7 @@ object PadavanResponseParser {
             if (jsVarPrefix.matches(Regex("(?s).*var\\s+$", RegexOption.IGNORE_CASE))) {
                 val lineEnd = html.indexOf("\n", idx).takeIf { it != -1 } ?: html.length
                 val lineStr = html.substring(idx, lineEnd)
-                val jsMatch = Pattern.compile("=\\s*['\"](.*?)['\"]", Pattern.CASE_INSENSITIVE).matcher(lineStr)
+                val jsMatch = cachedPattern("=\\s*['\"](.*?)['\"]", Pattern.CASE_INSENSITIVE).matcher(lineStr)
                 if (jsMatch.find()) {
                     return jsMatch.group(1) ?: ""
                 }
@@ -487,9 +531,9 @@ object PadavanResponseParser {
                         val tagStr = html.substring(tagStart, tagEnd + 1).replace("'", "\"")
                         
                         val isChecked = tagStr.contains("checked", ignoreCase = true) || tagStr.contains("value=\"1 checked\"", ignoreCase = true)
-                        val valMatcher = Pattern.compile("value=\"([^\"]*)\"", Pattern.CASE_INSENSITIVE).matcher(tagStr)
+                        val valMatcher = cachedPattern("value=\"([^\"]*)\"", Pattern.CASE_INSENSITIVE).matcher(tagStr)
                         val thisValue = if (valMatcher.find()) valMatcher.group(1) ?: "" else ""
-                        val typeMatcher = Pattern.compile("type=\"([^\"]*)\"", Pattern.CASE_INSENSITIVE).matcher(tagStr)
+                        val typeMatcher = cachedPattern("type=\"([^\"]*)\"", Pattern.CASE_INSENSITIVE).matcher(tagStr)
                         val type = if (typeMatcher.find()) typeMatcher.group(1)?.lowercase() else ""
                         
                         if (type == "radio") {
@@ -511,7 +555,7 @@ object PadavanResponseParser {
                 if (jsVarPrefix.matches(Regex("(?s).*var\\s+$", RegexOption.IGNORE_CASE))) {
                     val lineEnd = html.indexOf("\n", idx).takeIf { it != -1 } ?: html.length
                     val lineStr = html.substring(idx, lineEnd)
-                    val jsMatch = Pattern.compile("=\\s*['\"]?(1|0|true|false)['\"]?", Pattern.CASE_INSENSITIVE).matcher(lineStr)
+                    val jsMatch = cachedPattern("=\\s*['\"]?(1|0|true|false)['\"]?", Pattern.CASE_INSENSITIVE).matcher(lineStr)
                     if (jsMatch.find()) {
                         jsVarValue = jsMatch.group(1)
                     }
@@ -678,11 +722,11 @@ object PadavanResponseParser {
         // Wireless MAC Filter
         val macFilterMode = extractValueOrKeep(html, "${prefix}macmode", existingConfig.macFilterMode)
         val macFilterRules = mutableListOf<WirelessMacFilterRule>()
-        val macListPattern = Pattern.compile("var\\s+ACLList\\s*=\\s*\\[(.*?)\\]\\s*;", Pattern.DOTALL or Pattern.CASE_INSENSITIVE)
+        val macListPattern = cachedPattern("var\\s+ACLList\\s*=\\s*\\[(.*?)\\]\\s*;", Pattern.DOTALL or Pattern.CASE_INSENSITIVE)
         val macListMatcher = macListPattern.matcher(html)
         if (macListMatcher.find()) {
             val content = macListMatcher.group(1) ?: ""
-            val entryPattern = Pattern.compile("\\[\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*\\]")
+            val entryPattern = cachedPattern("\\[\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*\\]")
             val entryMatcher = entryPattern.matcher(content)
             while (entryMatcher.find()) {
                 val mac = entryMatcher.group(1) ?: ""
@@ -797,11 +841,11 @@ object PadavanResponseParser {
 
         // Parse Static Leases (ManualDHCPList)
         val staticLeases = mutableListOf<com.example.padavancontrol.data.models.StaticLease>()
-        val mDhcpPattern = Pattern.compile("var\\s+m_dhcp\\s*=\\s*\\[(.*?)\\]\\s*;", Pattern.DOTALL)
+        val mDhcpPattern = cachedPattern("var\\s+m_dhcp\\s*=\\s*\\[(.*?)\\]\\s*;", Pattern.DOTALL)
         val mDhcpMatcher = mDhcpPattern.matcher(html)
         if (mDhcpMatcher.find()) {
             val arrayContent = mDhcpMatcher.group(1) ?: ""
-            val entryPattern = Pattern.compile("\\[\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*\\]")
+            val entryPattern = cachedPattern("\\[\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*\\]")
             val entryMatcher = entryPattern.matcher(arrayContent)
             while (entryMatcher.find()) {
                 val mac = entryMatcher.group(1) ?: ""
@@ -831,11 +875,11 @@ object PadavanResponseParser {
         val useDhcpRoutes = extractBoolOrKeep(html, "dr_enable_x", existingConfig.useDhcpRoutes)
         val routeEnabled = extractBoolOrKeep(html, "sr_enable_x", existingConfig.routeEnabled)
         val staticRoutes = mutableListOf<com.example.padavancontrol.data.models.StaticRoute>()
-        val gwStaticPattern = Pattern.compile("var\\s+GWStaticList\\s*=\\s*\\[(.*?)\\]\\s*;", Pattern.DOTALL)
+        val gwStaticPattern = cachedPattern("var\\s+GWStaticList\\s*=\\s*\\[(.*?)\\]\\s*;", Pattern.DOTALL)
         val gwStaticMatcher = gwStaticPattern.matcher(html)
         if (gwStaticMatcher.find()) {
             val arrayContent = gwStaticMatcher.group(1) ?: ""
-            val entryPattern = Pattern.compile("\\[\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*\\]")
+            val entryPattern = cachedPattern("\\[\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*\\]")
             val entryMatcher = entryPattern.matcher(arrayContent)
             while (entryMatcher.find()) {
                 val dest = entryMatcher.group(1) ?: ""
@@ -877,7 +921,7 @@ object PadavanResponseParser {
             val devicesMap = mutableMapOf<String, String>() // MAC -> Name
             
             // 1. Parse ipmonitor
-            val ipMonPattern = Pattern.compile("var\\s+ipmonitor(?:_last)?\\s*=\\s*\\[(.*?)\\]\\s*;", Pattern.DOTALL)
+            val ipMonPattern = cachedPattern("var\\s+ipmonitor(?:_last)?\\s*=\\s*\\[(.*?)\\]\\s*;", Pattern.DOTALL)
             val ipMonMatcher = ipMonPattern.matcher(html)
             if (ipMonMatcher.find()) {
                 val arrayContent = ipMonMatcher.group(1)?.trim() ?: ""
@@ -905,7 +949,7 @@ object PadavanResponseParser {
             mDhcpMatcher.reset()
             if (mDhcpMatcher.find()) {
                 val arrayContent = mDhcpMatcher.group(1) ?: ""
-                val entryPattern = Pattern.compile("\\[\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*\\]")
+                val entryPattern = cachedPattern("\\[\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*\\]")
                 val entryMatcher = entryPattern.matcher(arrayContent)
                 while (entryMatcher.find()) {
                     val macRaw = entryMatcher.group(1) ?: ""
@@ -1040,11 +1084,11 @@ object PadavanResponseParser {
         val portForwardEnabled = extractBoolOrKeep(html, "vts_enable_x", existingConfig.portForwardEnabled)
 
         val portForwardRules = mutableListOf<com.example.padavancontrol.data.models.PortForwardRule>()
-        val vsListPattern = Pattern.compile("var\\s+VSList\\s*=\\s*\\[(.*?)\\]\\s*;", Pattern.DOTALL)
+        val vsListPattern = cachedPattern("var\\s+VSList\\s*=\\s*\\[(.*?)\\]\\s*;", Pattern.DOTALL)
         val vsListMatcher = vsListPattern.matcher(html)
         if (vsListMatcher.find()) {
             val arrayContent = vsListMatcher.group(1) ?: ""
-            val entryPattern = Pattern.compile("\\[\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,?\\s*['\"]?([^'\"]*)['\"]?\\s*\\]")
+            val entryPattern = cachedPattern("\\[\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,?\\s*['\"]?([^'\"]*)['\"]?\\s*\\]")
             val entryMatcher = entryPattern.matcher(arrayContent)
             while (entryMatcher.find()) {
                 val name = entryMatcher.group(1) ?: ""
@@ -1299,11 +1343,11 @@ object PadavanResponseParser {
 
         // Extract option values from the UrlList select list
         val urlKeywords = mutableListOf<String>()
-        val urlSelectPattern = Pattern.compile("<select[^>]*?name=\"UrlList_s\"[^>]*?>(.*?)</select>", Pattern.DOTALL or Pattern.CASE_INSENSITIVE)
+        val urlSelectPattern = cachedPattern("<select[^>]*?name=\"UrlList_s\"[^>]*?>(.*?)</select>", Pattern.DOTALL or Pattern.CASE_INSENSITIVE)
         val urlSelectMatcher = urlSelectPattern.matcher(html)
         if (urlSelectMatcher.find()) {
             val options = urlSelectMatcher.group(1) ?: ""
-            val optionPattern = Pattern.compile("<option[^>]*?value=\"([^\"]*)\"", Pattern.CASE_INSENSITIVE)
+            val optionPattern = cachedPattern("<option[^>]*?value=\"([^\"]*)\"", Pattern.CASE_INSENSITIVE)
             val optionMatcher = optionPattern.matcher(options)
             while (optionMatcher.find()) {
                 val keyword = optionMatcher.group(1) ?: ""
@@ -1320,11 +1364,11 @@ object PadavanResponseParser {
         val fwMacDrop = extractBoolOrKeep(html, "fw_mac_drop", existingConfig.fwMacDrop)
 
         val macFilterRules = mutableListOf<MacFilterRule>()
-        val macListPattern = Pattern.compile("var\\s+MACList\\s*=\\s*\\[(.*?)\\]\\s*;", Pattern.DOTALL)
+        val macListPattern = cachedPattern("var\\s+MACList\\s*=\\s*\\[(.*?)\\]\\s*;", Pattern.DOTALL)
         val macListMatcher = macListPattern.matcher(html)
         if (macListMatcher.find()) {
             val arrayContent = macListMatcher.group(1) ?: ""
-            val entryPattern = Pattern.compile("\\[\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*\\]")
+            val entryPattern = cachedPattern("\\[\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*\\]")
             val entryMatcher = entryPattern.matcher(arrayContent)
             while (entryMatcher.find()) {
                 val mac = entryMatcher.group(1) ?: ""
@@ -1346,11 +1390,11 @@ object PadavanResponseParser {
         val filterLwIcmp = extractValueOrKeep(html, "filter_lw_icmp_x", existingConfig.filterLwIcmp)
 
         val serviceFilterRules = mutableListOf<ServiceFilterRule>()
-        val vsListPattern = Pattern.compile("var\\s+LWFilterList\\s*=\\s*\\[(.*?)\\]\\s*;", Pattern.DOTALL)
+        val vsListPattern = cachedPattern("var\\s+LWFilterList\\s*=\\s*\\[(.*?)\\]\\s*;", Pattern.DOTALL)
         val vsListMatcher = vsListPattern.matcher(html)
         if (vsListMatcher.find()) {
             val arrayContent = vsListMatcher.group(1) ?: ""
-            val entryPattern = Pattern.compile("\\[\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,?\\s*['\"]?([^'\"]*)['\"]?\\s*\\]")
+            val entryPattern = cachedPattern("\\[\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,?\\s*['\"]?([^'\"]*)['\"]?\\s*\\]")
             val entryMatcher = entryPattern.matcher(arrayContent)
             while (entryMatcher.find()) {
                 val srcIp = entryMatcher.group(1) ?: ""
@@ -1480,11 +1524,11 @@ object PadavanResponseParser {
 
         // 8. Dynamic Accounts list
         val accountsList = mutableListOf<String>()
-        val accountsPattern = Pattern.compile("var\\s+accounts\\s*=\\s*\\[(.*?)\\]\\s*;", Pattern.DOTALL)
+        val accountsPattern = cachedPattern("var\\s+accounts\\s*=\\s*\\[(.*?)\\]\\s*;", Pattern.DOTALL)
         val accountsMatcher = accountsPattern.matcher(html)
         if (accountsMatcher.find()) {
             val accountsStr = accountsMatcher.group(1) ?: ""
-            val itemPattern = Pattern.compile("['\"]([^'\"]*)['\"]")
+            val itemPattern = cachedPattern("['\"]([^'\"]*)['\"]")
             val itemMatcher = itemPattern.matcher(accountsStr)
             while (itemMatcher.find()) {
                 val acc = itemMatcher.group(1) ?: ""
@@ -1498,7 +1542,7 @@ object PadavanResponseParser {
 
         // 9. Permissions Map
         val permissionMap = mutableMapOf<String, List<FolderPermission>>()
-        val ifPattern = Pattern.compile("if\\s*\\(\\s*account\\s*==\\s*['\"]([^'\"]+)['\"]\\s*&&\\s*pool\\s*==\\s*['\"]([^'\"]+)['\"]\\s*\\)\\s*return\\s*\\[(.*?)\\]\\s*;", Pattern.DOTALL)
+        val ifPattern = cachedPattern("if\\s*\\(\\s*account\\s*==\\s*['\"]([^'\"]+)['\"]\\s*&&\\s*pool\\s*==\\s*['\"]([^'\"]+)['\"]\\s*\\)\\s*return\\s*\\[(.*?)\\]\\s*;", Pattern.DOTALL)
         val ifMatcher = ifPattern.matcher(html)
         while (ifMatcher.find()) {
             val accountName = ifMatcher.group(1) ?: ""
@@ -1506,7 +1550,7 @@ object PadavanResponseParser {
             val entriesText = ifMatcher.group(3) ?: ""
             
             val list = permissionMap[accountName]?.toMutableList() ?: mutableListOf()
-            val entryPattern = Pattern.compile("\\[\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*\\]")
+            val entryPattern = cachedPattern("\\[\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*\\]")
             val entryMatcher = entryPattern.matcher(entriesText)
             while (entryMatcher.find()) {
                 val folderName = entryMatcher.group(1) ?: ""
@@ -1571,16 +1615,16 @@ object PadavanResponseParser {
 
     fun parseShareTreeList(html: String): List<ShareNode> {
         val nodes = mutableListOf<ShareNode>()
-        val resultPattern = Pattern.compile("var\\s+result\\s*=\\s*\\[(.*?)\\]\\s*;", Pattern.DOTALL)
+        val resultPattern = cachedPattern("var\\s+result\\s*=\\s*\\[(.*?)\\]\\s*;", Pattern.DOTALL)
         val resultMatcher = resultPattern.matcher(html)
         val content = if (resultMatcher.find()) (resultMatcher.group(1) ?: "") else ""
         
-        val strPattern = Pattern.compile("['\"]([^'\"]*)['\"]")
+        val strPattern = cachedPattern("['\"]([^'\"]*)['\"]")
         val strMatcher = strPattern.matcher(content)
         
         var layerOrder = extractValue(html, "layer_order")
         if (layerOrder.isEmpty()) {
-            val layerPattern = Pattern.compile("var\\s+layer_order\\s*=\\s*['\"](.*?)['\"]")
+            val layerPattern = cachedPattern("var\\s+layer_order\\s*=\\s*['\"](.*?)['\"]")
             val layerMatcher = layerPattern.matcher(html)
             if (layerMatcher.find()) {
                 layerOrder = layerMatcher.group(1) ?: ""
@@ -1667,14 +1711,14 @@ object PadavanResponseParser {
         val mtdRwfsMount = extractValueOrKeep(html, "mtd_rwfs_mount", existingConfig.mtdRwfsMount)
         
         var fwVer = existingConfig.firmwareVersion
-        val verPattern = Pattern.compile("var\\s+firmware_version\\s*=\\s*\"([^\"]*)\"", Pattern.CASE_INSENSITIVE)
+        val verPattern = cachedPattern("var\\s+firmware_version\\s*=\\s*\"([^\"]*)\"", Pattern.CASE_INSENSITIVE)
         val verMatcher = verPattern.matcher(html)
         if (verMatcher.find()) {
             fwVer = verMatcher.group(1) ?: ""
         }
         
         var buildD = existingConfig.buildDate
-        val datePattern = Pattern.compile("var\\s+build_date\\s*=\\s*\"([^\"]*)\"", Pattern.CASE_INSENSITIVE)
+        val datePattern = cachedPattern("var\\s+build_date\\s*=\\s*\"([^\"]*)\"", Pattern.CASE_INSENSITIVE)
         val dateMatcher = datePattern.matcher(html)
         if (dateMatcher.find()) {
             buildD = dateMatcher.group(1) ?: ""
@@ -1801,7 +1845,7 @@ object PadavanResponseParser {
     }
 
     private fun extractTextarea(html: String, name: String): String {
-        val pattern = Pattern.compile("<textarea[^>]*?name=\"$name\"[^>]*?>(.*?)</textarea>", Pattern.DOTALL or Pattern.CASE_INSENSITIVE)
+        val pattern = cachedPattern("<textarea[^>]*?name=\"$name\"[^>]*?>(.*?)</textarea>", Pattern.DOTALL or Pattern.CASE_INSENSITIVE)
         val matcher = pattern.matcher(html)
         if (matcher.find()) {
             return matcher.group(1)?.trim() ?: ""
@@ -1812,7 +1856,7 @@ object PadavanResponseParser {
     fun parseWifiScan(html: String): List<com.example.padavancontrol.data.models.WifiNetwork> {
         val networks = mutableListOf<com.example.padavancontrol.data.models.WifiNetwork>()
         try {
-            val pattern = Pattern.compile("(apcli_scan_results|apcli_networks|networks|site_survey|wds_aplist)\\s*=\\s*\\[(.*?)\\]\\s*;", Pattern.DOTALL or Pattern.CASE_INSENSITIVE)
+            val pattern = cachedPattern("(apcli_scan_results|apcli_networks|networks|site_survey|wds_aplist)\\s*=\\s*\\[(.*?)\\]\\s*;", Pattern.DOTALL or Pattern.CASE_INSENSITIVE)
             val matcher = pattern.matcher(html)
             var varName = ""
             var arrayContent = ""
@@ -1823,12 +1867,12 @@ object PadavanResponseParser {
                 arrayContent = html
             }
 
-            val entryPattern = Pattern.compile("\\[(.*?)\\]", Pattern.DOTALL)
+            val entryPattern = cachedPattern("\\[(.*?)\\]", Pattern.DOTALL)
             val entryMatcher = entryPattern.matcher(arrayContent)
             while (entryMatcher.find()) {
                 val row = entryMatcher.group(1) ?: continue
                 val items = mutableListOf<String>()
-                val fieldMatcher = Pattern.compile("\\s*'([^']*)'\\s*|\\s*\"([^\"]*)\"\\s*|([^,]+)").matcher(row)
+                val fieldMatcher = cachedPattern("\\s*'([^']*)'\\s*|\\s*\"([^\"]*)\"\\s*|([^,]+)").matcher(row)
                 while (fieldMatcher.find()) {
                     val g1 = fieldMatcher.group(1)
                     val g2 = fieldMatcher.group(2)
@@ -1911,10 +1955,10 @@ object PadavanResponseParser {
     fun parseHardwareModel(html: String): String? {
         try {
             val patterns = listOf(
-                Pattern.compile("var\\s+product_id\\s*=\\s*['\"](.*?)['\"];?", Pattern.CASE_INSENSITIVE),
-                Pattern.compile("product_id\\s*=\\s*['\"](.*?)['\"]", Pattern.CASE_INSENSITIVE),
-                Pattern.compile("var\\s+model_name\\s*=\\s*['\"](.*?)['\"];?", Pattern.CASE_INSENSITIVE),
-                Pattern.compile("var\\s+productid\\s*=\\s*['\"](.*?)['\"];?", Pattern.CASE_INSENSITIVE)
+                cachedPattern("var\\s+product_id\\s*=\\s*['\"](.*?)['\"];?", Pattern.CASE_INSENSITIVE),
+                cachedPattern("product_id\\s*=\\s*['\"](.*?)['\"]", Pattern.CASE_INSENSITIVE),
+                cachedPattern("var\\s+model_name\\s*=\\s*['\"](.*?)['\"];?", Pattern.CASE_INSENSITIVE),
+                cachedPattern("var\\s+productid\\s*=\\s*['\"](.*?)['\"];?", Pattern.CASE_INSENSITIVE)
             )
             for (pattern in patterns) {
                 val matcher = pattern.matcher(html)
@@ -1929,6 +1973,66 @@ object PadavanResponseParser {
             e.printStackTrace()
         }
         return null
+    }
+
+    /**
+     * Extracts a human-readable router name from a Padavan page.
+     *
+     * The login page exposes the router model in its <title>, e.g.
+     * "RM-AC2100 Wireless Router". Admin pages also expose the configured
+     * device name through the [computer_name2] hidden field. The configured
+     * name wins when both are present.
+     */
+    fun parseRouterName(html: String): String? {
+        try {
+            val namePatterns = listOf(
+                cachedPattern("name\\s*=\\s*[\"']?computer_name2[\"']?[^>]*?value\\s*=\\s*[\"']([^\"']+)[\"']", Pattern.CASE_INSENSITIVE),
+                cachedPattern("value\\s*=\\s*[\"']([^\"']+)[\"'][^>]*?name\\s*=\\s*[\"']?computer_name2[\"']?", Pattern.CASE_INSENSITIVE),
+                cachedPattern("(?:var\\s+|document\\.form\\.)computer_name(?:\\.value)?\\s*=\\s*[\"']([^\"']+)[\"']", Pattern.CASE_INSENSITIVE)
+            )
+            for (pattern in namePatterns) {
+                val matcher = pattern.matcher(html)
+                if (matcher.find()) {
+                    val name = decodeHtmlEntities(matcher.group(1) ?: "")
+                    if (isValidRouterName(name)) return name
+                }
+            }
+
+            val titlePattern = cachedPattern("<title>(.*?)</title>", Pattern.DOTALL or Pattern.CASE_INSENSITIVE)
+            val titleMatcher = titlePattern.matcher(html)
+            if (titleMatcher.find()) {
+                var title = decodeHtmlEntities(titleMatcher.group(1) ?: "")
+                    .substringBefore(" - ")
+                    .substringBefore(" – ")
+                    .trim()
+                title = title.replace(Regex("\\s+Wireless Router.*$", RegexOption.IGNORE_CASE), "").trim()
+                if (isValidRouterName(title)) return title
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return null
+    }
+
+    private fun isValidRouterName(name: String): Boolean {
+        if (name.isBlank()) return false
+        if (name.contains("<#") || name.contains("<%")) return false
+        if (name.equals("Wireless Router", ignoreCase = true)) return false
+        if (name.equals("Router", ignoreCase = true)) return false
+        return true
+    }
+
+    private fun decodeHtmlEntities(value: String): String {
+        return value
+            .replace("&amp;", "&")
+            .replace("&lt;", "<")
+            .replace("&gt;", ">")
+            .replace("&quot;", "\"")
+            .replace("&#39;", "'")
+            .replace("&apos;", "'")
+            .replace("&nbsp;", " ")
+            .replace("&#x27;", "'")
+            .trim()
     }
 
     fun parseEthernetPorts(html: String): List<com.example.padavancontrol.data.models.EthernetPortInfo> {
@@ -2013,7 +2117,7 @@ object PadavanResponseParser {
     }
 
     fun parseWirelessStatusPage(html: String, band: String): com.example.padavancontrol.data.models.WirelessSectionInfo {
-        val matcher = Pattern.compile("<textarea[^>]*?>(.*?)</textarea>", Pattern.DOTALL).matcher(html)
+        val matcher = cachedPattern("<textarea[^>]*?>(.*?)</textarea>", Pattern.DOTALL).matcher(html)
         val text = if (matcher.find()) matcher.group(1)?.trim() ?: "" else html.trim()
         return parseWirelessStatusText(text, band)
     }

@@ -53,6 +53,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -81,20 +82,30 @@ fun DevicesScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedClient by remember { mutableStateOf<LanClient?>(null) }
 
-    val filteredClients = uiState.clients.filter {
-        it.hostname.contains(uiState.searchQuery, ignoreCase = true) ||
-                it.ipAddress.contains(uiState.searchQuery) ||
-                it.macAddress.contains(uiState.searchQuery, ignoreCase = true)
+    DisposableEffect(Unit) {
+        viewModel.setPollingEnabled(true)
+        onDispose { viewModel.setPollingEnabled(false) }
     }
 
-    val onlineClients = filteredClients.filter { it.isOnline }
-        .distinctBy { "${it.macAddress}_${it.ipAddress}_${it.connectionType}" }
-    val offlineClients = filteredClients.filter { !it.isOnline }
+    val filteredClients = remember(uiState.clients, uiState.searchQuery) {
+        uiState.clients.filter {
+            it.hostname.contains(uiState.searchQuery, ignoreCase = true) ||
+                    it.ipAddress.contains(uiState.searchQuery) ||
+                    it.macAddress.contains(uiState.searchQuery, ignoreCase = true)
+        }
+    }
+
+    val onlineClients = remember(filteredClients) {
+        filteredClients.filter { it.isOnline }
+            .distinctBy { "${it.macAddress}_${it.ipAddress}_${it.connectionType}" }
+    }
+    val offlineClients = remember(filteredClients) { filteredClients.filter { !it.isOnline } }
 
     // Classify online clients
-    val wifi5GClients = onlineClients.filter { it.connectionType == "5G" }
-    val wifi2GClients = onlineClients.filter { it.connectionType == "2.4G" || it.connectionType == "Wireless" }
-    val wiredClients = onlineClients.filter { it.connectionType == "Wired" }
+    val wifi5GClients = remember(onlineClients) { onlineClients.filter { it.connectionType == "5G" } }
+    val wifi2GClients = remember(onlineClients) { onlineClients.filter { it.connectionType == "2.4G" } }
+    val unknownWifiClients = remember(onlineClients) { onlineClients.filter { it.connectionType == "Wireless" } }
+    val wiredClients = remember(onlineClients) { onlineClients.filter { it.connectionType == "Wired" } }
 
     Scaffold(
         topBar = {
@@ -207,6 +218,18 @@ fun DevicesScreen(
                             DeviceSectionHeader(title = t("2.4 GHz Wireless Devices"), count = wifi2GClients.size)
                         }
                         items(wifi2GClients, key = { "${it.macAddress}_${it.ipAddress}_2G" }) { client ->
+                            DeviceRowItem(
+                                client = client,
+                                onClick = { selectedClient = client }
+                            )
+                        }
+                    }
+
+                    if (unknownWifiClients.isNotEmpty()) {
+                        item {
+                            DeviceSectionHeader(title = t("Wireless Devices"), count = unknownWifiClients.size)
+                        }
+                        items(unknownWifiClients, key = { "${it.macAddress}_${it.ipAddress}_Wireless" }) { client ->
                             DeviceRowItem(
                                 client = client,
                                 onClick = { selectedClient = client }

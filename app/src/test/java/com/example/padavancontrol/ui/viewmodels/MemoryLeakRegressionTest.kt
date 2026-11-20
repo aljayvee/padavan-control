@@ -36,7 +36,11 @@ class MemoryLeakRegressionTest {
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         whenever(credentialStore.getRouterIp()).thenReturn("192.168.1.1")
+        whenever(credentialStore.getRouterName()).thenReturn("")
         whenever(credentialStore.getHardwareModel()).thenReturn("NEWIFI3")
+        kotlinx.coroutines.runBlocking {
+            whenever(repository.refreshRouterIdentity()).thenReturn(true)
+        }
         
         // Mocking flows to return empty to prevent infinite collection hangs in tests
         whenever(repository.getSystemStatus()).thenReturn(emptyFlow())
@@ -52,6 +56,7 @@ class MemoryLeakRegressionTest {
     @Test
     fun `verify ViewModel polling stops immediately after onCleared is called`() = runTest(testDispatcher) {
         val viewModel = DashboardViewModel(repository, credentialStore)
+        viewModel.setPollingEnabled(true)
         
         // Let it run for a few cycles
         advanceTimeBy(5000)

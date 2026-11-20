@@ -44,6 +44,7 @@ class LogViewerViewModelTest {
     @Test
     fun testInitialStateAndLogsFetch() = runTest(testDispatcher) {
         val viewModel = LogViewerViewModel(repository, testDispatcher)
+        viewModel.fetchLogs()
 
         testDispatcher.scheduler.advanceUntilIdle()
 

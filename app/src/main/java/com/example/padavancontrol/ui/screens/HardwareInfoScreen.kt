@@ -94,6 +94,11 @@ fun HardwareInfoScreen(
     var showGlossary by remember { mutableStateOf(false) }
     val tabs = listOf(t("Wireless Status"), t("Ethernet Ports"))
 
+    DisposableEffect(Unit) {
+        viewModel.setPollingEnabled(true)
+        onDispose { viewModel.setPollingEnabled(false) }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -764,14 +769,12 @@ fun GlossaryItemCard(item: GlossaryTerm) {
 }
 
 // extension helper for scaling Compose components
-fun Modifier.scale(scale: Float): Modifier = this.then(
-    layout { measurable, constraints ->
-        val placeable = measurable.measure(constraints)
-        layout(
-            (placeable.width * scale).toInt(),
-            (placeable.height * scale).toInt()
-        ) {
-            placeable.placeRelative(0, 0)
-        }
+fun Modifier.scale(scale: Float): Modifier = this.layout { measurable, constraints ->
+    val placeable = measurable.measure(constraints)
+    layout(
+        (placeable.width * scale).toInt(),
+        (placeable.height * scale).toInt()
+    ) {
+        placeable.placeRelative(0, 0)
     }
-)
+}

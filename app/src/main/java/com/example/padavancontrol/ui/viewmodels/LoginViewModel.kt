@@ -52,12 +52,13 @@ class LoginViewModel(
 
     init {
         val isOnboarded = credentialStore.isOnboardingCompleted()
+        val remembered = credentialStore.isRememberCredentials()
         _uiState.update {
             it.copy(
                 ipAddress = credentialStore.getRouterIp(),
                 username = credentialStore.getUsername(),
-                password = credentialStore.getPassword(),
-                rememberMe = credentialStore.isRememberCredentials(),
+                password = if (remembered) credentialStore.getPassword() else "",
+                rememberMe = remembered,
                 currentStep = if (isOnboarded) LoginStep.CREDENTIALS else LoginStep.SCANNING
             )
         }
@@ -65,6 +66,27 @@ class LoginViewModel(
 
     fun updateIpAddress(value: String) {
         _uiState.update { it.copy(ipAddress = value) }
+    }
+
+    /**
+     * Re-read credentials from the secure store when the login screen is
+     * shown. The view model is created once at app start, so after logout or
+     * an unauthorized event its in-memory password could otherwise still be
+     * displayed on the login form.
+     */
+    fun refreshCredentialsFromStore() {
+        val isOnboarded = credentialStore.isOnboardingCompleted()
+        val remembered = credentialStore.isRememberCredentials()
+        _uiState.update {
+            it.copy(
+                ipAddress = credentialStore.getRouterIp(),
+                username = credentialStore.getUsername(),
+                password = if (remembered) credentialStore.getPassword() else "",
+                rememberMe = remembered,
+                isLoading = false,
+                currentStep = if (isOnboarded) LoginStep.CREDENTIALS else LoginStep.SCANNING
+            )
+        }
     }
 
     fun updateUsername(value: String) {
@@ -111,7 +133,8 @@ class LoginViewModel(
                 val success = repository.checkLogin(
                     state.ipAddress,
                     state.username,
-                    state.password
+                    state.password,
+                    state.rememberMe
                 )
 
                 _uiState.update { it.copy(isLoading = false) }

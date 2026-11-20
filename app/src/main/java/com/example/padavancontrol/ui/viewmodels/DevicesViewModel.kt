@@ -29,24 +29,35 @@ class DevicesViewModel(
     val uiState: StateFlow<DevicesUiState> = _uiState.asStateFlow()
 
     private var pollingJob: Job? = null
+    private var isPollingActive = false
+    private val pollingBackoff = PollingBackoff(baseDelayMs = 5000L)
 
-    init {
-        startPolling()
+    fun setPollingEnabled(enabled: Boolean) {
+        if (enabled == isPollingActive) return
+        isPollingActive = enabled
+        if (enabled) {
+            startPolling()
+        } else {
+            pollingJob?.cancel()
+        }
     }
 
     private fun startPolling() {
         pollingJob?.cancel()
         pollingJob = viewModelScope.launch {
             while (isActive) {
+                var success = false
                 repository.getLanClients().collect { result ->
                     result.onSuccess { list ->
+                        success = true
                         _uiState.update { it.copy(clients = list, isLoading = false, errorMessage = null) }
                     }
                     result.onFailure { error ->
                         _uiState.update { it.copy(isLoading = false, errorMessage = error.message ?: "Failed to fetch clients") }
                     }
                 }
-                delay(5000)
+                if (success) pollingBackoff.onSuccess() else pollingBackoff.onFailure()
+                delay(pollingBackoff.nextDelayMs())
             }
         }
     }
