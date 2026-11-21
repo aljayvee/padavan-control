@@ -3,7 +3,7 @@
 Source copied from the patched fork:
 
 - https://github.com/antoxa78/padavan-control
-- Release: https://github.com/antoxa78/padavan-control/releases/tag/v1.2.1-subnet
+- Release: https://github.com/antoxa78/padavan-control/releases/tag/v1.2.2-buttons
 
 ## Changes
 
@@ -17,6 +17,12 @@ Source copied from the patched fork:
 - Polling now runs only while a screen is visible, backs off after failures, and caches band-status pages.
 - Faster startup: ViewModels are created on demand and regex patterns are cached.
 - Gentler `/24` discovery: lower concurrency, jitter, Wi-Fi-only scanning, and no SSDP when a router is already found. This avoids temporary DNS/DHCP disruption on weak routers.
+- Fixed action buttons that Padavan was silently ignoring:
+  - Wi-Fi radio toggles now send `sid_list=WLANConfig11a/11b`.
+  - Device block/unblock now uses the `MFList` group and reject-list mode.
+  - Factory reset now posts `RestoreNVRAM`/`RestoreStorage` to `apply.cgi`.
+  - Dashboard Save and Commit buttons now use the `CommitFlash` action.
+  - Wireless saves now use the real NVRAM field names for SSID, PSK, guest, bridge, RADIUS and MAC-filter settings.
 - Manual IP and saved router address still work.
 
 ## Build
@@ -33,11 +39,11 @@ The APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
 ## Install
 
 - Android 8.0 or newer.
-- The included APK is **debug-signed** with the same debug key as `1.1-subnet` and `1.2-subnet`, so it can be installed over the previous release.
+- The included APK is **debug-signed** with the same debug key as `1.1-subnet`, `1.2-subnet` and `1.2.1-subnet`, so it can be installed over the previous release.
 - Connect the phone to the router's main Wi-Fi.
 - If auto-scan misses the router, use **Set IP Manually** with `192.168.31.10`.
 
 ## APK
 
-- `dist/Padavan_Control-1.2.1-subnet.apk`
-- SHA256: `c6e0f19957ab2b5ef8f0056dc26492c7d24b673d63bfd425e7396771f17e9d59`
+- `dist/Padavan_Control-1.2.2-buttons.apk`
+- SHA256: `1019ac025ac18d3dbb37104b9d26116662c250e99c6de90471deff1b9b241ab5`

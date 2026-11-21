@@ -421,9 +421,15 @@ class DefaultPadavanRepository(
     override suspend fun toggleWifi2G(enable: Boolean): Boolean {
         return try {
             val radioVal = if (enable) "1" else "0"
+            // The radio flag is only written to NVRAM when its service is
+            // listed in sid_list; without it the router silently ignores
+            // rt_radio_x. The wifi restart itself is triggered by the
+            // EVM_RESTART_WIFI2 event mask once the value changes.
             val fields = mapOf(
                 "action_mode" to " Apply ",
-                "action_script" to "restart_wifi_rt",
+                "current_page" to "index.asp",
+                "next_page" to "",
+                "sid_list" to "WLANConfig11b;",
                 "rt_radio_x" to radioVal
             )
             val response = getService().applySettings(fields)
@@ -439,7 +445,9 @@ class DefaultPadavanRepository(
             val radioVal = if (enable) "1" else "0"
             val fields = mapOf(
                 "action_mode" to " Apply ",
-                "action_script" to "restart_wifi_wl",
+                "current_page" to "index.asp",
+                "next_page" to "",
+                "sid_list" to "WLANConfig11a;",
                 "wl_radio_x" to radioVal
             )
             val response = getService().applySettings(fields)
@@ -511,13 +519,17 @@ class DefaultPadavanRepository(
     override suspend fun commitFlash(): Boolean = commitFlash("commit_all")
 
     override suspend fun commitFlash(action: String): Boolean {
-        val cmd = when (action) {
-            "commit_nvram" -> "nvram commit"
-            "commit_storage" -> "mtd_storage.sh save"
-            else -> "nvram commit && mtd_storage.sh save"
+        val nvramAction = when (action) {
+            "commit_nvram" -> "commit_nvram"
+            "commit_storage" -> "commit_storage"
+            else -> "commit_all"
         }
         return try {
-            getService().executeCommand(systemCmd = cmd).isSuccessful
+            // CommitFlash is handled by apply.cgi. Posting a raw SystemCmd
+            // only queues /tmp/syscmd.sh; it isn't executed until the
+            // console page is fetched, so the old implementation silently
+            // did nothing.
+            getService().commitFlash(nvramAction = nvramAction).isSuccessful
         } catch (e: Exception) {
             e.printStackTrace()
             false
@@ -526,12 +538,9 @@ class DefaultPadavanRepository(
 
     override suspend fun restoreNvramDefaults(): Boolean {
         return try {
-            val fields = mapOf(
-                "action_mode" to " RestoreNVRAM ",
-                "current_page" to "Advanced_SettingBackup_Content.asp",
-                "next_page" to "Advanced_SettingBackup_Content.asp"
-            )
-            getService().applySettings(fields).isSuccessful
+            // These actions are handled by apply.cgi, not start_apply.htm
+            // (start_apply.htm only processes Apply/Add/Del/Restart/Update).
+            getService().performAction(actionMode = " RestoreNVRAM ").isSuccessful
         } catch (e: Exception) {
             e.printStackTrace()
             false
@@ -540,12 +549,7 @@ class DefaultPadavanRepository(
 
     override suspend fun restoreStorageDefaults(): Boolean {
         return try {
-            val fields = mapOf(
-                "action_mode" to " RestoreStorage ",
-                "current_page" to "Advanced_SettingBackup_Content.asp",
-                "next_page" to "Advanced_SettingBackup_Content.asp"
-            )
-            getService().applySettings(fields).isSuccessful
+            getService().performAction(actionMode = " RestoreStorage ").isSuccessful
         } catch (e: Exception) {
             e.printStackTrace()
             false
@@ -607,7 +611,11 @@ class DefaultPadavanRepository(
             "action_mode" to " Add ",
             "action_wait" to "5",
             "action_script" to "restart_firewall",
-            "macfilter_enable_x" to "1",
+            "sid_list" to "FirewallConfig;General;",
+            "group_id" to "MFList",
+            // 2 = reject list (block listed MACs). 1 would switch to
+            // whitelist mode and block every other client instead.
+            "macfilter_enable_x" to "2",
             "macfilter_list_x_0" to macAddress,
             "macfilter_time_x_0" to "00002359",
             "macfilter_date_x_0" to "1111111"
@@ -628,7 +636,9 @@ class DefaultPadavanRepository(
             "action_mode" to " Del ",
             "action_wait" to "5",
             "action_script" to "restart_firewall",
-            "macfilter_enable_x" to "1",
+            "sid_list" to "FirewallConfig;General;",
+            "group_id" to "MFList",
+            "macfilter_enable_x" to "2",
             "MFList_s" to index.toString()
         )
         return try {
@@ -669,14 +679,14 @@ class DefaultPadavanRepository(
 
             if (page.contains("WGuest", ignoreCase = true)) {
                 fields["${prefix}guest_enable"] = if (config.guestEnabled) "1" else "0"
-                fields["${prefix}guest_ssid_org"] = config.guestSsid
+                fields["${prefix}guest_ssid"] = config.guestSsid
                 fields["${prefix}guest_closed"] = if (config.guestClosed) "1" else "0"
                 fields["${prefix}guest_lan_isolate"] = if (config.guestLanIsolate) "1" else "0"
                 fields["${prefix}guest_ap_isolate"] = if (config.guestApIsolate) "1" else "0"
                 fields["${prefix}guest_auth_mode"] = config.guestAuthMode
                 fields["${prefix}guest_wpa_mode"] = config.guestWpaMode
                 fields["${prefix}guest_crypto"] = config.guestCrypto
-                fields["${prefix}guest_wpa_psk_org"] = config.guestWpaPsk
+                fields["${prefix}guest_wpa_psk"] = config.guestWpaPsk
                 fields["${prefix}guest_date_x"] = config.guestDate
                 fields["${prefix}guest_time_x"] = config.guestTimeWorkweek
                 fields["${prefix}guest_time2_x"] = config.guestTimeWeekend
@@ -687,24 +697,28 @@ class DefaultPadavanRepository(
                 fields["action_mode"] = if (mode == "1" || mode == "2") " Restart " else " Apply "
                 fields["${prefix}mode_x"] = mode
                 fields["${prefix}sta_wisp"] = config.staWisp
-                fields["${prefix}sta_ssid_org"] = config.staSsid
+                fields["${prefix}sta_ssid"] = config.staSsid
                 fields["${prefix}sta_auth_mode"] = config.staAuthMode
                 fields["${prefix}sta_wpa_mode"] = config.staWpaMode
                 fields["${prefix}sta_crypto"] = config.staCrypto
-                fields["${prefix}sta_wpa_psk_org"] = config.staWpaPsk
+                fields["${prefix}sta_wpa_psk"] = config.staWpaPsk
                 fields["${prefix}sta_auto"] = config.staAuto
                 fields["${prefix}channel"] = config.channel
             } else if (page.contains("ACL", ignoreCase = true) || page.contains("MACFilter", ignoreCase = true)) {
-                fields["action_mode"] = if (config.macFilterMode == "disabled") " Apply " else " Restart "
-                fields["${prefix}macmode"] = config.macFilterMode
-                val macListStr = config.macFilterRules.joinToString("<") { "${it.mac}<${it.desc}" }.let { if (it.isNotEmpty()) "<$it" else "" }
-                fields["${prefix}maclist_x"] = macListStr
+                // MAC filter rules are a group list on the router, not a
+                // single string field. Replace them through the group API.
+                return saveWirelessAcl(page, config, is5GHz)
             } else if (page.contains("WSecurity", ignoreCase = true) || page.contains("RADIUS", ignoreCase = true)) {
+                fields["sid_list"] = if (is5GHz) {
+                    "WLANAuthentication11a;WLANConfig11a;"
+                } else {
+                    "WLANAuthentication11b;WLANConfig11b;"
+                }
                 fields["${prefix}radius_ipaddr"] = config.radiusIp
                 fields["${prefix}radius_port"] = config.radiusPort.toString()
                 fields["${prefix}radius_key"] = config.radiusKey
             } else if (page.contains("WAdvanced", ignoreCase = true) || page.contains("Professional", ignoreCase = true)) {
-                fields["${prefix}IGMPSnoop"] = if (config.igmpSnooping) "1" else "0"
+                fields["${prefix}IgmpSnEnable"] = if (config.igmpSnooping) "1" else "0"
                 fields["${prefix}wme"] = if (config.wmmCapable) "1" else "0"
                 fields["${prefix}ap_isolate"] = if (config.apIsolate) "1" else "0"
                 fields["${prefix}bcn"] = config.bcnInterval.toString()
@@ -712,7 +726,7 @@ class DefaultPadavanRepository(
                 fields["${prefix}frag"] = config.fragThresh.toString()
                 fields["${prefix}rts"] = config.rtsThresh.toString()
                 fields["${prefix}TxBurst"] = if (config.txBurst) "1" else "0"
-                fields["${prefix}GreenAP"] = if (config.greenAp) "1" else "0"
+                fields["${prefix}greenap"] = if (config.greenAp) "1" else "0"
                 fields["${prefix}TxPower"] = config.txPower.toString()
                 fields["${prefix}mcs_mode"] = config.mcsMode
                 fields["${prefix}KickStaRssiLow"] = config.kickStaRssiLow.toString()
@@ -728,7 +742,7 @@ class DefaultPadavanRepository(
                 fields["${prefix}APSDCapable"] = if (config.wmmApsd) "1" else "0"
             } else {
                 fields["${prefix}radio_x"] = if (config.isEnabled) "1" else "0"
-                fields["${prefix}ssid2"] = config.ssid
+                fields["${prefix}ssid"] = config.ssid
                 fields["${prefix}closed"] = if (config.isClosed) "1" else "0"
                 fields["${prefix}gmode"] = config.wirelessMode
                 fields["${prefix}HT_BW"] = config.bandwidth
@@ -736,7 +750,7 @@ class DefaultPadavanRepository(
                 fields["${prefix}auth_mode"] = config.authMode
                 fields["${prefix}wpa_mode"] = config.wpaMode
                 fields["${prefix}crypto"] = config.crypto
-                fields["${prefix}wpa_psk_org"] = config.wpaPsk
+                fields["${prefix}wpa_psk"] = config.wpaPsk
                 fields["${prefix}radio_date_x"] = config.radioDate
                 fields["${prefix}radio_time_x"] = config.radioTimeWorkweek
                 fields["${prefix}radio_time2_x"] = config.radioTimeWeekend
@@ -1904,6 +1918,74 @@ class DefaultPadavanRepository(
             emit(Result.failure(lastException ?: IOException("Scan failed after retries")))
         }
     }.flowOn(Dispatchers.IO)
+
+    private suspend fun saveWirelessAcl(
+        page: String,
+        config: WirelessConfig,
+        is5GHz: Boolean
+    ): Boolean {
+        val prefix = if (is5GHz) "wl_" else "rt_"
+        val sid = if (is5GHz) "DeviceSecurity11a;" else "DeviceSecurity11b;"
+        val groupId = if (is5GHz) "ACLList" else "rt_ACLList"
+        val service = getService()
+
+        // Read the current rules first so stale entries are removed. If the
+        // page can't be read, abort instead of appending duplicates.
+        val currentRules = try {
+            val response = service.getPageContent(page)
+            if (!response.isSuccessful || response.body() == null) return false
+            PadavanResponseParser.parseWirelessConfig(response.body()!!, is5GHz).macFilterRules
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return false
+        }
+
+        // Delete from the highest index so the remaining indices stay valid.
+        for (index in currentRules.indices.reversed()) {
+            val response = service.applySettings(
+                mapOf(
+                    "action_mode" to " Del ",
+                    "current_page" to page,
+                    "next_page" to "",
+                    "sid_list" to sid,
+                    "group_id" to groupId,
+                    "${groupId}_s" to index.toString()
+                )
+            )
+            if (!response.isSuccessful) return false
+        }
+
+        for (rule in config.macFilterRules) {
+            val response = service.applySettings(
+                mapOf(
+                    "action_mode" to " Add ",
+                    "current_page" to page,
+                    "next_page" to "",
+                    "sid_list" to sid,
+                    "group_id" to groupId,
+                    "${prefix}maclist_x_0" to rule.mac,
+                    "${prefix}macdesc_x_0" to rule.desc
+                )
+            )
+            if (!response.isSuccessful) return false
+        }
+
+        val fields = mapOf(
+            "action_mode" to " Restart ",
+            "action_script" to if (is5GHz) "restart_wifi_wl" else "restart_wifi_rt",
+            "current_page" to page,
+            "next_page" to "",
+            "sid_list" to sid,
+            "group_id" to groupId,
+            "${prefix}macmode" to config.macFilterMode
+        )
+        val response = applyAndCommitSettings(fields)
+        if (response.isSuccessful) {
+            if (is5GHz) cachedWireless5g = config else cachedWireless2g = config
+            return true
+        }
+        return false
+    }
 
     private suspend fun applyAndCommitSettings(fields: Map<String, String>): retrofit2.Response<String> {
         val response = getService().applySettings(fields)

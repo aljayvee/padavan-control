@@ -699,7 +699,7 @@ object PadavanResponseParser {
         val kickStaRssiLow = extractIntOrKeep(html, "${prefix}KickStaRssiLow", existingConfig.kickStaRssiLow)
         val assocReqRssiThres = extractIntOrKeep(html, "${prefix}AssocReqRssiThres", existingConfig.assocReqRssiThres)
         val countryCode = extractValueOrKeep(html, "${prefix}country_code", existingConfig.countryCode)
-        val igmpSnooping = extractBoolOrKeep(html, "${prefix}IGMPSnoop", existingConfig.igmpSnooping)
+        val igmpSnooping = extractBoolOrKeep(html, "${prefix}IgmpSnEnable", existingConfig.igmpSnooping)
         val wmmCapable = extractBoolOrKeep(html, "${prefix}wme", existingConfig.wmmCapable)
         val apIsolate = extractBoolOrKeep(html, "${prefix}ap_isolate", existingConfig.apIsolate)
         val bcnInterval = extractIntOrKeep(html, "${prefix}bcn", existingConfig.bcnInterval)
@@ -707,7 +707,7 @@ object PadavanResponseParser {
         val fragThresh = extractIntOrKeep(html, "${prefix}frag", existingConfig.fragThresh)
         val rtsThresh = extractIntOrKeep(html, "${prefix}rts", existingConfig.rtsThresh)
         val txBurst = extractBoolOrKeep(html, "${prefix}TxBurst", existingConfig.txBurst)
-        val greenAp = extractBoolOrKeep(html, "${prefix}GreenAP", existingConfig.greenAp)
+        val greenAp = extractBoolOrKeep(html, "${prefix}greenap", existingConfig.greenAp)
 
         // Additional Professional settings
         val streamTx = extractValueOrKeep(html, "${prefix}stream_tx", existingConfig.streamTx)

@@ -14,6 +14,7 @@ This fork adds:
 - Correct 2.4 GHz / 5 GHz / wired device classification.
 - Model-aware port count (4 ports on RM-AC2100, 5 on Newifi D2).
 - Gentle subnet discovery that avoids disrupting router DNS/DHCP on weak hardware.
+- Fixed action buttons that the router was silently ignoring: Wi-Fi radio toggles, device block/unblock, factory reset, NVRAM/storage commit, and wireless settings saves (SSID/password, guest, bridge, RADIUS, MAC filter).
 - Manual IP and the saved router address continue to work as before.
 
 ---
