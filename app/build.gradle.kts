@@ -13,8 +13,8 @@ android {
         applicationId = "com.example.padavancontrol"
         minSdk = 26
         targetSdk = 37
-        versionCode = 7
-        versionName = "1.2.4-fixes"
+        versionCode = 8
+        versionName = "1.2.5-fixes"
     }
 
     signingConfigs {

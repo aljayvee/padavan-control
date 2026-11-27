@@ -212,6 +212,11 @@ fun DashboardScreen(
                 // Internet Status Box
                 val wan = uiState.wanStatus
                 val isConnected = wan?.isConnected ?: false
+                // In AP mode Padavan does not populate wan0_uptime, so fall back
+                // to the router's system uptime rather than showing a dash.
+                val uptimeSeconds = wan?.uptime?.takeIf { it > 0L }
+                    ?: uiState.systemStatus?.uptime
+                    ?: 0L
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
@@ -247,19 +252,6 @@ fun DashboardScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
-                            Column(horizontalAlignment = Alignment.End) {
-                                Text(
-                                    text = t("Uptime"),
-                                    fontSize = 10.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = formatWanUptime(wan?.uptime ?: 0L),
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            }
                         }
 
                         Spacer(modifier = Modifier.height(12.dp))
@@ -275,6 +267,7 @@ fun DashboardScreen(
                                 .joinToString(", ")
                                 .ifBlank { "0.0.0.0" }
                         )
+                        WanInfoRow(t("Uptime"), formatWanUptime(uptimeSeconds))
                     }
                 }
 

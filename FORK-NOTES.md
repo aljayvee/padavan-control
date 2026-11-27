@@ -4,7 +4,12 @@ Source copied from the patched fork:
 
 - https://github.com/antoxa78/padavan-control
 - Original release: https://github.com/antoxa78/padavan-control/releases/tag/v1.2.3-fixes
-- New signed release: https://github.com/antoxa78/padavan-control/releases/tag/v1.2.4-fixes
+- New signed release: https://github.com/antoxa78/padavan-control/releases/tag/v1.2.5-fixes
+
+## 1.2.5-fixes
+
+- Uptime is now always shown in the dashboard internet card. In AP mode Padavan leaves `wan0_uptime` empty, so the card falls back to the router system uptime.
+- DNS entries separated by `<br/>` in the WAN status page are parsed correctly.
 
 ## 1.2.4-fixes
 
@@ -59,11 +64,11 @@ The APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
 ## Install
 
 - Android 8.0 or newer.
-- The included APK is signed with the project release key. Because the 1.2.3 and older APKs were debug-signed, Android will refuse to install 1.2.4 over them; uninstall the old app first. That clears saved settings and credentials.
+- The included APK is signed with the project release key. Upgrading from 1.2.4 is fine. Because the 1.2.3 and older APKs were debug-signed, Android will refuse to install 1.2.5 over them; uninstall the old app first. That clears saved settings and credentials.
 - Connect the phone to the router's main Wi-Fi.
 - If auto-scan misses the router, use **Set IP Manually** with `192.168.31.10`.
 
 ## APK
 
-- `dist/Padavan_Control-1.2.4-fixes.apk`
-- SHA256: `5a48babcec869d163276c9fd4ab91e892454777b837b8939dfafd8b913b08f38`
+- `dist/Padavan_Control-1.2.5-fixes.apk`
+- SHA256: `76e0b6cfb02c9cb9941524cc160bb896ac27a1bf756728d938157ba35a9f3dd1`

@@ -311,7 +311,10 @@ object PadavanResponseParser {
             val wanIp = extractString("wanlink_ip4_wan")
             val gateway = extractString("wanlink_gw4_wan")
             val dnsString = extractString("wanlink_dns")
-            val dnsParts = dnsString.split(" ").filter { it.isNotEmpty() }
+            // Padavan separates DNS servers with <br/> in the WAN status page.
+            val dnsParts = dnsString.split(Regex("<br\\s*/?>|\\s+"))
+                .map { it.trim() }
+                .filter { it.isNotEmpty() && it != "---" }
             val dns1 = dnsParts.getOrNull(0) ?: "0.0.0.0"
             val dns2 = dnsParts.getOrNull(1) ?: "0.0.0.0"
 
