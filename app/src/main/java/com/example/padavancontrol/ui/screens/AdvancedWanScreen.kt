@@ -88,7 +88,7 @@ fun AdvancedWanScreen(
 
     val pagePath = remember(section) {
         when (section) {
-            t("Connection") -> "Advanced_WAN_Content.asp"
+            "Connection" -> "Advanced_WAN_Content.asp"
             "IPv6" -> "Advanced_IPv6_Content.asp"
             "PortForward" -> "Advanced_VirtualServer_Content.asp"
             "DMZ" -> "Advanced_Exposed_Content.asp"
@@ -97,15 +97,13 @@ fun AdvancedWanScreen(
         }
     }
 
-    val title = remember(section) {
-        when (section) {
-            t("Connection") -> t("Internet Connection")
-            "IPv6" -> "IPv6 Protocol Stack"
-            "PortForward" -> t("Port Forwarding (NAT)")
-            "DMZ" -> t("DMZ Host Settings")
-            "DDNS" -> t("Dynamic DNS (DDNS)")
-            else -> "WAN & Internet Settings"
-        }
+    val title = when (section) {
+        "Connection" -> t("Internet Connection")
+        "IPv6" -> "IPv6 Protocol Stack"
+        "PortForward" -> t("Port Forwarding (NAT)")
+        "DMZ" -> t("DMZ Host Settings")
+        "DDNS" -> t("Dynamic DNS (DDNS)")
+        else -> "WAN & Internet Settings"
     }
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -178,7 +176,7 @@ fun AdvancedWanScreen(
         ddnsHostError = null
 
         val config = uiState.config
-        if (section == t("Connection")) {
+        if (section == "Connection") {
             if (!config.wanDnsEnable) {
                 if (config.wanDns1.isNotEmpty() && !isValidIp(config.wanDns1)) {
                     dns1Error = "Invalid DNS IP address format"
@@ -327,7 +325,7 @@ fun deletePortForward(index: Int) {
                     LinearProgressIndicator(
                         progress = { animatedProgress },
                         color = ArcherTeal,
-                        trackColor = Color(0xFFE0F2F1),
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(8.dp)
@@ -343,7 +341,7 @@ fun deletePortForward(index: Int) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = uiState.config.loadStatus.ifEmpty { "Fetching WAN configuration..." },
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 14.sp,
                         textAlign = TextAlign.Center
                     )
@@ -365,7 +363,7 @@ fun deletePortForward(index: Int) {
                     Spacer(modifier = Modifier.height(16.dp))
                     Text("Error loading settings", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(uiState.errorMessage ?: "", color = Color.Gray, fontSize = 14.sp)
+                    Text(uiState.errorMessage ?: "", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(24.dp))
                     Button(
                         onClick = { viewModel.loadConfig(pagePath, forceRefresh = true) },
@@ -387,8 +385,8 @@ fun deletePortForward(index: Int) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 16.dp)
-                            .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
@@ -407,27 +405,27 @@ fun deletePortForward(index: Int) {
                                     text = "WAN Settings Manager",
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 14.sp,
-                                    color = Color.Black
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "Manage dynamic IP routing, WAN gateways, dynamic DNS configurations, and NAT forwarding.",
                                 fontSize = 12.sp,
-                                color = Color.Gray
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
 
                     // Form Sections
                     when (section) {
-                        t("Connection") -> {
+                        "Connection" -> {
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -546,7 +544,7 @@ fun deletePortForward(index: Int) {
                                     ) {
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text("ARP Ping Alive of Remote Gateway", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Check gateway connectivity via ARP", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Check gateway connectivity via ARP", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.gwArpPing,
@@ -600,7 +598,7 @@ fun deletePortForward(index: Int) {
                                     ) {
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text("Get DNS Server Automatically", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Fetch DNS configurations from ISP", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Fetch DNS configurations from ISP", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.wanDnsEnable,
@@ -700,7 +698,7 @@ fun deletePortForward(index: Int) {
                                     ) {
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text("Don't Decrement TTL after Routing", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Prevent downstream TTL reduction", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Prevent downstream TTL reduction", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.wanTtlFix,
@@ -796,7 +794,7 @@ fun deletePortForward(index: Int) {
                                     ) {
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text("VLAN Tagged Traffic Filter?", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Enable CPU VLAN tagging and filtering", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Enable CPU VLAN tagging and filtering", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.vlanFilter,
@@ -849,8 +847,8 @@ fun deletePortForward(index: Int) {
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -932,7 +930,7 @@ fun deletePortForward(index: Int) {
                                         ) {
                                             Column(modifier = Modifier.weight(1f)) {
                                                 Text("Get DNSv6 Servers Automatically?", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                                Text("Fetch IPv6 DNS from ISP dynamically", color = Color.Gray, fontSize = 12.sp)
+                                                Text("Fetch IPv6 DNS from ISP dynamically", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                             }
                                             Switch(
                                                 checked = uiState.config.ipv6DnsAuto,
@@ -971,7 +969,7 @@ fun deletePortForward(index: Int) {
                                         ) {
                                             Column(modifier = Modifier.weight(1f)) {
                                                 Text("Get LAN IPv6 Address via DHCPv6 IA-PD?", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                                Text("Prefix delegation dynamic addressing", color = Color.Gray, fontSize = 12.sp)
+                                                Text("Prefix delegation dynamic addressing", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                             }
                                             Switch(
                                                 checked = uiState.config.ipv6LanAuto,
@@ -987,7 +985,7 @@ fun deletePortForward(index: Int) {
                                         ) {
                                             Column(modifier = Modifier.weight(1f)) {
                                                 Text("Enable LAN Router Advertisement?", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                                Text("Send RA packets to clients", color = Color.Gray, fontSize = 12.sp)
+                                                Text("Send RA packets to clients", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                             }
                                             Switch(
                                                 checked = uiState.config.ipv6LanRadv,
@@ -1099,8 +1097,8 @@ fun deletePortForward(index: Int) {
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -1113,7 +1111,7 @@ fun deletePortForward(index: Int) {
                                     ) {
                                         Column {
                                             Text("Enable UPnP", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Allow automated port bindings from local apps", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Allow automated port bindings from local apps", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.upnpEnabled,
@@ -1159,7 +1157,7 @@ fun deletePortForward(index: Int) {
                                         ) {
                                             Column {
                                                 Text("Enable UPnP Security Mode", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                                Text("Secure dynamic port binding requests", color = Color.Gray, fontSize = 12.sp)
+                                                Text("Secure dynamic port binding requests", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                             }
                                             Switch(
                                                 checked = uiState.config.upnpSecure,
@@ -1226,7 +1224,7 @@ fun deletePortForward(index: Int) {
                                     ) {
                                         Column {
                                             Text("Enable Manual Port Forwarding", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Define custom manual IP/port bindings", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Define custom manual IP/port bindings", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.portForwardEnabled,
@@ -1242,8 +1240,8 @@ fun deletePortForward(index: Int) {
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(bottom = 16.dp)
-                                        .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Column(modifier = Modifier.padding(16.dp)) {
@@ -1341,15 +1339,15 @@ fun deletePortForward(index: Int) {
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(bottom = 16.dp)
-                                        .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Column(modifier = Modifier.padding(16.dp)) {
                                         Text("Current Forwarding Rules (${uiState.config.portForwardRules.size})", fontWeight = FontWeight.Bold, color = ArcherTeal, modifier = Modifier.padding(bottom = 12.dp))
                                         
                                         if (uiState.config.portForwardRules.isEmpty()) {
-                                            Text("No manual rules active.", color = Color.Gray, fontSize = 12.sp, modifier = Modifier.padding(vertical = 12.dp))
+                                            Text("No manual rules active.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, modifier = Modifier.padding(vertical = 12.dp))
                                         } else {
                                             uiState.config.portForwardRules.forEachIndexed { index, rule ->
                                                 Row(
@@ -1357,15 +1355,15 @@ fun deletePortForward(index: Int) {
                                                         .fillMaxWidth()
                                                         .padding(vertical = 8.dp)
                                                         .clip(RoundedCornerShape(8.dp))
-                                                        .background(Color(0xFFFAFAFA))
+                                                        .background(MaterialTheme.colorScheme.surfaceVariant)
                                                         .padding(12.dp),
                                                     horizontalArrangement = Arrangement.SpaceBetween,
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
                                                     Column(modifier = Modifier.weight(1f)) {
                                                         Text(rule.name, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                                        Text("Ext Port: ${rule.extPort} → ${rule.intIp}:${rule.intPort}", fontSize = 12.sp, color = Color.DarkGray)
-                                                        Text("Protocol: ${rule.protocol} | Desc: ${rule.desc}", fontSize = 12.sp, color = Color.Gray)
+                                                        Text("Ext Port: ${rule.extPort} → ${rule.intIp}:${rule.intPort}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                        Text("Protocol: ${rule.protocol} | Desc: ${rule.desc}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                                     }
                                                     IconButton(onClick = { deletePortForward(index) }) {
                                                         Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete", tint = Color.Red)
@@ -1383,8 +1381,8 @@ fun deletePortForward(index: Int) {
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -1397,7 +1395,7 @@ fun deletePortForward(index: Int) {
                                     ) {
                                         Column {
                                             Text("Enable DMZ Host", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Expose a local host fully to the WAN", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Expose a local host fully to the WAN", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.dmzEnabled,
@@ -1433,7 +1431,7 @@ fun deletePortForward(index: Int) {
                                     ) {
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text("Starcraft (Battle.Net)", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Enable Battle.Net connection sharing", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Enable Battle.Net connection sharing", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.dmzSpBattle,
@@ -1450,8 +1448,8 @@ fun deletePortForward(index: Int) {
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -1464,7 +1462,7 @@ fun deletePortForward(index: Int) {
                                     ) {
                                         Column {
                                             Text("Enable Dynamic DNS", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Bind WAN IP address to dynamic hostname", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Bind WAN IP address to dynamic hostname", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.ddnsEnabled,
@@ -1605,8 +1603,8 @@ fun deletePortForward(index: Int) {
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(bottom = 16.dp)
-                                        .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Column(modifier = Modifier.padding(16.dp)) {
@@ -1723,8 +1721,8 @@ fun deletePortForward(index: Int) {
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(bottom = 16.dp)
-                                        .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Column(modifier = Modifier.padding(16.dp)) {

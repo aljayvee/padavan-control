@@ -355,7 +355,7 @@ fun AdvancedUsbScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     Text("Error loading settings", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(uiState.errorMessage ?: "", color = Color.Gray, fontSize = 14.sp)
+                    Text(uiState.errorMessage ?: "", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(24.dp))
                     Button(
                         onClick = { loadConfig() },
@@ -374,7 +374,7 @@ fun AdvancedUsbScreen(
                 ) {
                     LinearProgressIndicator(
                         color = ArcherTeal,
-                        trackColor = Color(0xFFE0F2F1),
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(8.dp)
@@ -383,7 +383,7 @@ fun AdvancedUsbScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = uiState.loadStatus.ifEmpty { "Fetching USB configuration..." },
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 14.sp,
                         textAlign = TextAlign.Center
                     )
@@ -401,8 +401,8 @@ fun AdvancedUsbScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 16.dp)
-                            .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
@@ -418,13 +418,13 @@ fun AdvancedUsbScreen(
                                     text = "USB Device Services Portal",
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 14.sp,
-                                    color = Color.Black
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "Administer your router USB connected peripherals, network storage nodes, FTP shares, NDIS LTE modems, and raw LPR network printing.",
-                                color = Color.Gray,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 12.sp
                             )
                         }
@@ -437,8 +437,8 @@ fun AdvancedUsbScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -450,13 +450,13 @@ fun AdvancedUsbScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { usb3Expanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text(if (uiState.config.usb3Disable) "Yes (USB 2.0 Only)" else "No (USB 3.0 Enabled)", color = Color.Black, fontSize = 14.sp)
+                                            Text(if (uiState.config.usb3Disable) "Yes (USB 2.0 Only)" else "No (USB 3.0 Enabled)", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = usb3Expanded, onDismissRequest = { usb3Expanded = false }) {
@@ -471,7 +471,7 @@ fun AdvancedUsbScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { spinExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -486,7 +486,7 @@ fun AdvancedUsbScreen(
                                                 "3600" -> "1 Hour"
                                                 else -> t("Disabled")
                                             }
-                                            Text(desc, color = Color.Black, fontSize = 14.sp)
+                                            Text(desc, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = spinExpanded, onDismissRequest = { spinExpanded = false }) {
@@ -505,13 +505,13 @@ fun AdvancedUsbScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { apmExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text(if (uiState.config.hddApmOff) "Yes (Disable APM)" else "No (Enable APM)", color = Color.Black, fontSize = 14.sp)
+                                            Text(if (uiState.config.hddApmOff) "Yes (Disable APM)" else "No (Enable APM)", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = apmExpanded, onDismissRequest = { apmExpanded = false }) {
@@ -526,13 +526,13 @@ fun AdvancedUsbScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { achkExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text(if (uiState.config.achkEnable) "Yes (Check filesystems)" else "No (Skip check)", color = Color.Black, fontSize = 14.sp)
+                                            Text(if (uiState.config.achkEnable) "Yes (Check filesystems)" else "No (Skip check)", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = achkExpanded, onDismissRequest = { achkExpanded = false }) {
@@ -547,7 +547,7 @@ fun AdvancedUsbScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { reclaimExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -561,7 +561,7 @@ fun AdvancedUsbScreen(
                                                 "4" -> "15% RAM"
                                                 else -> t("Disabled")
                                             }
-                                            Text(desc, color = Color.Black, fontSize = 14.sp)
+                                            Text(desc, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = reclaimExpanded, onDismissRequest = { reclaimExpanded = false }) {
@@ -579,8 +579,8 @@ fun AdvancedUsbScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -592,7 +592,7 @@ fun AdvancedUsbScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { optwExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -604,7 +604,7 @@ fun AdvancedUsbScreen(
                                                 "2" -> "Entware Subsystem"
                                                 else -> t("Disabled")
                                             }
-                                            Text(desc, color = Color.Black, fontSize = 14.sp)
+                                            Text(desc, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = optwExpanded, onDismissRequest = { optwExpanded = false }) {
@@ -632,8 +632,8 @@ fun AdvancedUsbScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -646,7 +646,7 @@ fun AdvancedUsbScreen(
                                     ) {
                                         Column {
                                             Text("Enable Transmission BitTorrent Client", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Starts background transmission-daemon", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Starts background transmission-daemon", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.trmdEnable,
@@ -681,8 +681,8 @@ fun AdvancedUsbScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -695,7 +695,7 @@ fun AdvancedUsbScreen(
                                     ) {
                                         Column {
                                             Text("Enable Aria2 Download Manager", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Starts high-speed aria2c background agent", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Starts high-speed aria2c background agent", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.ariaEnable,
@@ -730,8 +730,8 @@ fun AdvancedUsbScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -744,7 +744,7 @@ fun AdvancedUsbScreen(
                                     ) {
                                         Column {
                                             Text("Enable Samba LAN Server", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Windows Network Neighborhood Share (SMB)", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Windows Network Neighborhood Share (SMB)", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.enableSamba,
@@ -767,7 +767,7 @@ fun AdvancedUsbScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { sambaModeExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -778,7 +778,7 @@ fun AdvancedUsbScreen(
                                                 "1" -> "User Authentication Mode"
                                                 else -> "User Authentication Mode"
                                             }
-                                            Text(desc, color = Color.Black, fontSize = 14.sp)
+                                            Text(desc, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = sambaModeExpanded, onDismissRequest = { sambaModeExpanded = false }) {
@@ -793,13 +793,13 @@ fun AdvancedUsbScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { sambaLmbExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text(if (uiState.config.sambaLmb == "1") t("Yes") else t("No"), color = Color.Black, fontSize = 14.sp)
+                                            Text(if (uiState.config.sambaLmb == "1") t("Yes") else t("No"), color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = sambaLmbExpanded, onDismissRequest = { sambaLmbExpanded = false }) {
@@ -814,13 +814,13 @@ fun AdvancedUsbScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { sambaFpExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text(if (uiState.config.sambaFp == "1") t("Yes") else t("No"), color = Color.Black, fontSize = 14.sp)
+                                            Text(if (uiState.config.sambaFp == "1") t("Yes") else t("No"), color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = sambaFpExpanded, onDismissRequest = { sambaFpExpanded = false }) {
@@ -833,7 +833,7 @@ fun AdvancedUsbScreen(
 
                             if (uiState.config.enableSamba) {
                                 Spacer(modifier = Modifier.height(16.dp))
-                                Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFFEEEEEE)))
+                                Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outlineVariant))
                                 Spacer(modifier = Modifier.height(16.dp))
                                 
                                 if (uiState.config.sambaMode == "1") {
@@ -861,12 +861,12 @@ fun AdvancedUsbScreen(
                                     )
                                 } else {
                                     Card(
-                                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp).border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFAFAFA))
+                                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp).border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                                     ) {
                                         Text(
                                             "Anonymous Mode: User account credentials are not required. Access control and folder permissions are bypassed.",
-                                            color = Color.Gray,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             fontSize = 12.sp,
                                             modifier = Modifier.padding(16.dp)
                                         )
@@ -922,8 +922,8 @@ fun AdvancedUsbScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -936,7 +936,7 @@ fun AdvancedUsbScreen(
                                     ) {
                                         Column {
                                             Text("Enable FTP Share Service", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Enables vsftpd active daemon", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Enables vsftpd active daemon", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.enableFtp,
@@ -950,7 +950,7 @@ fun AdvancedUsbScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { ftpModeExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -961,7 +961,7 @@ fun AdvancedUsbScreen(
                                                 "1" -> "Accounts Authentication Mode"
                                                 else -> "Accounts Mode"
                                             }
-                                            Text(desc, color = Color.Black, fontSize = 14.sp)
+                                            Text(desc, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = ftpModeExpanded, onDismissRequest = { ftpModeExpanded = false }) {
@@ -976,13 +976,13 @@ fun AdvancedUsbScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { ftpLogExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text(if (uiState.config.ftpLog) t("Yes") else t("No"), color = Color.Black, fontSize = 14.sp)
+                                            Text(if (uiState.config.ftpLog) t("Yes") else t("No"), color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = ftpLogExpanded, onDismissRequest = { ftpLogExpanded = false }) {
@@ -1024,7 +1024,7 @@ fun AdvancedUsbScreen(
 
                             if (uiState.config.enableFtp) {
                                 Spacer(modifier = Modifier.height(16.dp))
-                                Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFFEEEEEE)))
+                                Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outlineVariant))
                                 Spacer(modifier = Modifier.height(16.dp))
 
                                 if (uiState.config.ftpMode == "1") {
@@ -1056,12 +1056,12 @@ fun AdvancedUsbScreen(
                                         selectedAccount = "anonymous"
                                     }
                                     Card(
-                                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp).border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFAFAFA))
+                                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp).border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                                     ) {
                                         Text(
                                             "Anonymous FTP mode active. Directories shared are viewable by public guest anonymous accounts.",
-                                            color = Color.Gray,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             fontSize = 12.sp,
                                             modifier = Modifier.padding(16.dp)
                                         )
@@ -1117,8 +1117,8 @@ fun AdvancedUsbScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -1131,7 +1131,7 @@ fun AdvancedUsbScreen(
                                     ) {
                                         Column {
                                             Text("Enable USB Modem Interface", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Triggers modem fallback connection", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Triggers modem fallback connection", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.modemRule,
@@ -1147,7 +1147,7 @@ fun AdvancedUsbScreen(
                                             Row(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                     .clickable { modemTypeExpanded = true }
                                                     .padding(14.dp),
                                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1159,7 +1159,7 @@ fun AdvancedUsbScreen(
                                                     "3" -> "NDIS LTE (High Speed)"
                                                     else -> "NDIS Mode (3)"
                                                 }
-                                                Text(desc, color = Color.Black, fontSize = 14.sp)
+                                                Text(desc, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                                 Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                             }
                                             DropdownMenu(expanded = modemTypeExpanded, onDismissRequest = { modemTypeExpanded = false }) {
@@ -1176,13 +1176,13 @@ fun AdvancedUsbScreen(
                                             Row(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                     .clickable { modemCountryExpanded = true }
                                                     .padding(14.dp),
                                                 horizontalArrangement = Arrangement.SpaceBetween,
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
-                                                Text(activeCountry.name, color = Color.Black, fontSize = 14.sp)
+                                                Text(activeCountry.name, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                                 Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                             }
                                             DropdownMenu(expanded = modemCountryExpanded, onDismissRequest = { modemCountryExpanded = false }) {
@@ -1223,13 +1223,13 @@ fun AdvancedUsbScreen(
                                             Row(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                     .clickable { modemIspExpanded = true }
                                                     .padding(14.dp),
                                                 horizontalArrangement = Arrangement.SpaceBetween,
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
-                                                Text(uiState.config.modemIsp.ifEmpty { "other" }, color = Color.Black, fontSize = 14.sp)
+                                                Text(uiState.config.modemIsp.ifEmpty { "other" }, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                                 Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                             }
                                             DropdownMenu(expanded = modemIspExpanded, onDismissRequest = { modemIspExpanded = false }) {
@@ -1319,7 +1319,7 @@ fun AdvancedUsbScreen(
                                             Row(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                     .clickable { modemNetsExpanded = true }
                                                     .padding(14.dp),
                                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1331,7 +1331,7 @@ fun AdvancedUsbScreen(
                                                     "2" -> "3G Only"
                                                     else -> "Automatic"
                                                 }
-                                                Text(desc, color = Color.Black, fontSize = 14.sp)
+                                                Text(desc, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                                 Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                             }
                                             DropdownMenu(expanded = modemNetsExpanded, onDismissRequest = { modemNetsExpanded = false }) {
@@ -1358,7 +1358,7 @@ fun AdvancedUsbScreen(
                                         ) {
                                             Column {
                                                 Text("Obtain DNS Automatically", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                                Text("Pulls DNS parameters from carrier dial lease", color = Color.Gray, fontSize = 12.sp)
+                                                Text("Pulls DNS parameters from carrier dial lease", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                             }
                                             Switch(
                                                 checked = uiState.config.modemDnsAuto,
@@ -1396,7 +1396,7 @@ fun AdvancedUsbScreen(
                                             Row(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                     .clickable { modemNodeExpanded = true }
                                                     .padding(14.dp),
                                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1408,7 +1408,7 @@ fun AdvancedUsbScreen(
                                                     "2" -> "Lower USB Port (Node 2)"
                                                     else -> "Automatic"
                                                 }
-                                                Text(desc, color = Color.Black, fontSize = 14.sp)
+                                                Text(desc, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                                 Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                             }
                                             DropdownMenu(expanded = modemNodeExpanded, onDismissRequest = { modemNodeExpanded = false }) {
@@ -1432,7 +1432,7 @@ fun AdvancedUsbScreen(
                                             Row(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                     .clickable { modemZcdExpanded = true }
                                                     .padding(14.dp),
                                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1443,7 +1443,7 @@ fun AdvancedUsbScreen(
                                                     "1" -> "legacy eject"
                                                     else -> "usb-modeswitch"
                                                 }
-                                                Text(desc, color = Color.Black, fontSize = 14.sp)
+                                                Text(desc, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                                 Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                             }
                                             DropdownMenu(expanded = modemZcdExpanded, onDismissRequest = { modemZcdExpanded = false }) {
@@ -1461,8 +1461,8 @@ fun AdvancedUsbScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -1474,7 +1474,7 @@ fun AdvancedUsbScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { rawdExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -1486,7 +1486,7 @@ fun AdvancedUsbScreen(
                                                 "2" -> "RAW Bidirectional connection enabled"
                                                 else -> t("Disabled")
                                             }
-                                            Text(desc, color = Color.Black, fontSize = 14.sp)
+                                            Text(desc, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = rawdExpanded, onDismissRequest = { rawdExpanded = false }) {
@@ -1503,7 +1503,7 @@ fun AdvancedUsbScreen(
                                     ) {
                                         Column {
                                             Text("Enable LPR/LPD Spool Daemon", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Standard Unix Line Printer Remote Daemon", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Standard Unix Line Printer Remote Daemon", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.lprdEnable,
@@ -1519,7 +1519,7 @@ fun AdvancedUsbScreen(
                                     ) {
                                         Column {
                                             Text("Enable ASUS U2EC Utility Connector", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Connector software for ASUS specialized print utilities", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Connector software for ASUS specialized print utilities", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.u2ecEnable,
@@ -1620,7 +1620,7 @@ fun AdvancedUsbScreen(
             title = { Text("Change Account Password", color = ArcherTeal, fontWeight = FontWeight.Bold) },
             text = {
                 Column {
-                    Text("Modifying password for account: $accountToEdit", fontSize = 14.sp, color = Color.Gray, modifier = Modifier.padding(bottom = 12.dp))
+                    Text("Modifying password for account: $accountToEdit", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 12.dp))
                     OutlinedTextField(
                         value = accountPassInput,
                         onValueChange = { accountPassInput = it },
@@ -1697,7 +1697,7 @@ fun AdvancedUsbScreen(
             title = { Text("Create Shared Folder", color = ArcherTeal, fontWeight = FontWeight.Bold) },
             text = {
                 Column {
-                    Text("Creating new folder under partition: $selectedPool", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(bottom = 8.dp))
+                    Text("Creating new folder under partition: $selectedPool", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
                     OutlinedTextField(
                         value = folderNameInput,
                         onValueChange = { folderNameInput = it },
@@ -1735,7 +1735,7 @@ fun AdvancedUsbScreen(
             title = { Text("Rename Shared Folder", color = ArcherTeal, fontWeight = FontWeight.Bold) },
             text = {
                 Column {
-                    Text("Renaming folder '$folderToRename' under partition: $selectedPool", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(bottom = 8.dp))
+                    Text("Renaming folder '$folderToRename' under partition: $selectedPool", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
                     OutlinedTextField(
                         value = folderNameInput,
                         onValueChange = { folderNameInput = it },
@@ -1807,8 +1807,8 @@ private fun AccountManagerCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 16.dp)
-            .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -1825,7 +1825,7 @@ private fun AccountManagerCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             if (uiState.config.accounts.isEmpty()) {
-                Text("No user accounts configured. Press '+' to add one.", color = Color.Gray, fontSize = 14.sp)
+                Text("No user accounts configured. Press '+' to add one.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
             } else {
                 Column {
                     uiState.config.accounts.forEach { account ->
@@ -1836,7 +1836,7 @@ private fun AccountManagerCard(
                                 .padding(vertical = 4.dp)
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(if (isSelected) ArcherTeal.copy(alpha = 0.1f) else Color.Transparent)
-                                .border(1.dp, if (isSelected) ArcherTeal else Color(0xFFEEEEEE), RoundedCornerShape(8.dp))
+                                .border(1.dp, if (isSelected) ArcherTeal else MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                 .clickable { onSelectAccount(account) }
                                 .padding(8.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -1846,14 +1846,14 @@ private fun AccountManagerCard(
                                 Icon(
                                     imageVector = Icons.Default.Person,
                                     contentDescription = null,
-                                    tint = if (isSelected) ArcherTeal else Color.Gray,
+                                    tint = if (isSelected) ArcherTeal else MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(20.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = account,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                    color = if (isSelected) ArcherTeal else Color.Black,
+                                    color = if (isSelected) ArcherTeal else MaterialTheme.colorScheme.onSurface,
                                     fontSize = 14.sp
                                 )
                             }
@@ -1893,8 +1893,8 @@ private fun DirectoryBrowserCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 16.dp)
-            .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -1908,7 +1908,7 @@ private fun DirectoryBrowserCard(
                         CircularProgressIndicator(color = ArcherTeal, modifier = Modifier.size(24.dp))
                     }
                 } else {
-                    Text("No connected storage units detected.", color = Color.Gray, fontSize = 14.sp)
+                    Text("No connected storage units detected.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                 }
             } else {
                 Column {
@@ -1981,7 +1981,7 @@ private fun FolderTreeNode(
                     else -> Icons.AutoMirrored.Filled.Article // shared folder
                 },
                 contentDescription = null,
-                tint = if (isSelected) ArcherTeal else Color.Gray,
+                tint = if (isSelected) ArcherTeal else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(20.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
@@ -1989,7 +1989,7 @@ private fun FolderTreeNode(
                 text = node.name,
                 fontSize = 14.sp,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                color = if (isSelected) ArcherTeal else Color.Black
+                color = if (isSelected) ArcherTeal else MaterialTheme.colorScheme.onSurface
             )
         }
 
@@ -2031,8 +2031,8 @@ private fun PermissionsGridCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 16.dp)
-            .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -2053,7 +2053,7 @@ private fun PermissionsGridCard(
             } else if (nodeDepth == 3) {
                 // Folder
                 Text("Shared Folder: $selectedFolder", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                Text("Partition location: $selectedPool", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(bottom = 12.dp))
+                Text("Partition location: $selectedPool", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 12.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
@@ -2080,7 +2080,7 @@ private fun PermissionsGridCard(
                     }
                 }
 
-                Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFFEEEEEE)))
+                Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outlineVariant))
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text("Folder Access Permissions ($selectedAccount)", fontWeight = FontWeight.Bold, color = ArcherTeal, fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))

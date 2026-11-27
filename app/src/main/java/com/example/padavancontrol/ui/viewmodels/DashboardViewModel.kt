@@ -260,7 +260,6 @@ class DashboardViewModel(
     }
 
     public override fun onCleared() {
-        super.onCleared()
         pollingJob?.cancel()
     }
 }

@@ -18,7 +18,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -50,7 +49,7 @@ fun BreadcrumbBar(
         modifier = modifier
             .fillMaxWidth()
             .horizontalScroll(scrollState)
-            .background(Color(0xFFF7F7F7))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -67,7 +66,7 @@ fun BreadcrumbBar(
                     text = label,
                     fontSize = 12.sp,
                     fontWeight = if (isLast) FontWeight.Bold else FontWeight.Medium,
-                    color = if (isLast) Color(0xFF333333) else Color(0xFF008080), // ArcherTeal-ish
+                    color = if (isLast) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary,
                     modifier = Modifier
                         .clip(RoundedCornerShape(4.dp))
                         .clickable(enabled = !isLast) {
@@ -80,7 +79,7 @@ fun BreadcrumbBar(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                         contentDescription = "separator",
-                        tint = Color.Gray,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 2.dp)
                     )
                 }

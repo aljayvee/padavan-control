@@ -4,7 +4,7 @@ package com.example.padavancontrol.data
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.os.Build
+import androidx.core.content.edit
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 
@@ -19,14 +19,7 @@ class CredentialStore(context: Context) {
         e.printStackTrace()
         if (e is java.security.GeneralSecurityException) {
             try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    context.deleteSharedPreferences("secure_padavan_prefs")
-                } else {
-                    val sharedPrefsFile = java.io.File(context.filesDir.parent, "shared_prefs/secure_padavan_prefs.xml")
-                    if (sharedPrefsFile.exists()) {
-                        sharedPrefsFile.delete()
-                    }
-                }
+                context.deleteSharedPreferences("secure_padavan_prefs")
             } catch (delEx: Exception) {
                 delEx.printStackTrace()
             }
@@ -54,13 +47,12 @@ class CredentialStore(context: Context) {
         remember: Boolean,
         useBiometric: Boolean
     ) {
-        sharedPreferences.edit().apply {
+        sharedPreferences.edit {
             putString("username", username)
             putString("router_ip", ipAddress)
             putString("password", password)
             putBoolean("remember_credentials", remember)
             putBoolean("use_biometric", useBiometric)
-            apply()
         }
     }
 
@@ -75,27 +67,26 @@ class CredentialStore(context: Context) {
     fun isUseBiometric(): Boolean = sharedPreferences.getBoolean("use_biometric", false)
 
     fun clearCredentials() {
-        sharedPreferences.edit().apply {
+        sharedPreferences.edit {
             remove("username")
             remove("password")
             remove("remember_credentials")
             remove("use_biometric")
-            apply()
         }
     }
 
     fun saveRouterIp(ipAddress: String) {
-        sharedPreferences.edit().putString("router_ip", ipAddress).apply()
+        sharedPreferences.edit { putString("router_ip", ipAddress) }
     }
 
     fun saveHardwareModel(productId: String) {
-        sharedPreferences.edit().putString("hardware_model", productId).apply()
+        sharedPreferences.edit { putString("hardware_model", productId) }
     }
 
     fun getHardwareModel(): String = sharedPreferences.getString("hardware_model", "") ?: ""
 
     fun saveRouterName(name: String) {
-        sharedPreferences.edit().putString("router_name", name).apply()
+        sharedPreferences.edit { putString("router_name", name) }
     }
 
     fun getRouterName(): String = sharedPreferences.getString("router_name", "") ?: ""
@@ -103,6 +94,6 @@ class CredentialStore(context: Context) {
     fun isOnboardingCompleted(): Boolean = sharedPreferences.getBoolean("onboarding_completed", false)
 
     fun setOnboardingCompleted(completed: Boolean) {
-        sharedPreferences.edit().putBoolean("onboarding_completed", completed).apply()
+        sharedPreferences.edit { putBoolean("onboarding_completed", completed) }
     }
 }

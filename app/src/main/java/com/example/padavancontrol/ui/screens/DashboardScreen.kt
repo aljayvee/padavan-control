@@ -37,6 +37,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -61,6 +62,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -208,39 +210,71 @@ fun DashboardScreen(
                 // no model-specific warning is needed.
 
                 // Internet Status Box
+                val wan = uiState.wanStatus
+                val isConnected = wan?.isConnected ?: false
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
-                    Row(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .padding(16.dp)
                     ) {
-                        val isConnected = uiState.wanStatus?.isConnected ?: false
-                        val dotColor = if (isConnected) Color(0xFF2ECC71) else Color(0xFFE74C3C)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val dotColor = if (isConnected) Color(0xFF2ECC71) else Color(0xFFE74C3C)
 
-                        Box(
-                            modifier = Modifier
-                                .size(12.dp)
-                                .clip(CircleShape)
-                                .background(dotColor)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = if (isConnected) t("Internet Connected") else t("No Internet Access"),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp
+                            Box(
+                                modifier = Modifier
+                                    .size(12.dp)
+                                    .clip(CircleShape)
+                                    .background(dotColor)
                             )
-                            Text(
-                                text = "${t("IP")}: ${uiState.wanStatus?.wanIp ?: "0.0.0.0"} • ${t("Type")}: ${uiState.wanStatus?.connectionType ?: "DHCP"}",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = if (isConnected) t("Internet Connected") else t("No Internet Access"),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp
+                                )
+                                Text(
+                                    text = "${t("Connection Type")}: ${wan?.connectionType ?: "DHCP"}",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(
+                                    text = t("Uptime"),
+                                    fontSize = 10.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = formatWanUptime(wan?.uptime ?: 0L),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
                         }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        WanInfoRow(t("WAN IP"), wan?.wanIp ?: "0.0.0.0")
+                        WanInfoRow(t("Gateway"), wan?.gateway ?: "0.0.0.0")
+                        WanInfoRow(
+                            t("DNS"),
+                            listOfNotNull(wan?.dns1, wan?.dns2)
+                                .filter { it.isNotBlank() && it != "0.0.0.0" }
+                                .joinToString(", ")
+                                .ifBlank { "0.0.0.0" }
+                        )
                     }
                 }
 
@@ -402,7 +436,7 @@ fun DashboardScreen(
         val days = (status?.uptime ?: 0L) / 86400
         val hours = ((status?.uptime ?: 0L) % 86400) / 3600
         val minutes = ((status?.uptime ?: 0L) % 3600) / 60
-        val uptimeFormatted = "${days}d ${String.format("%02d", hours)}h ${String.format("%02d", minutes)}m"
+        val uptimeFormatted = "${days}d ${String.format(java.util.Locale.US, "%02d", hours)}h ${String.format(java.util.Locale.US, "%02d", minutes)}m"
 
         AlertDialog(
             onDismissRequest = { showCpuDetailsModal = false },
@@ -697,7 +731,7 @@ fun PortWidget(port: PortLink) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = if (port.isConnected) {
-                        if (port.speed.contains("1000") || port.speed.contains(t("1G"), ignoreCase = true)) t("1G") else t("100M")
+                        if (port.speed.contains("1000") || port.speed.contains("1G", ignoreCase = true)) t("1G") else t("100M")
                     } else t("Down"),
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
@@ -826,4 +860,42 @@ fun MemoryRow(label: String, value: String) {
         Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(value, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
     }
+}
+
+@Composable
+private fun WanInfoRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            text = value,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.End,
+            modifier = Modifier.weight(1.4f)
+        )
+    }
+}
+
+private fun formatWanUptime(seconds: Long): String {
+    if (seconds <= 0L) return "-"
+    val days = seconds / 86400
+    val hours = (seconds % 86400) / 3600
+    val minutes = (seconds % 3600) / 60
+    return buildString {
+        if (days > 0) append("${days}d ")
+        if (days > 0 || hours > 0) append("${hours}h ")
+        append("${minutes}m")
+    }.trim()
 }

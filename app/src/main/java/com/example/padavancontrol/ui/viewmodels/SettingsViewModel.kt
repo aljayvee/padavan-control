@@ -151,7 +151,6 @@ class SettingsViewModel(
     }
 
     override fun onCleared() {
-        super.onCleared()
         // If there's a pending debounced IP save, persist it immediately
         val currentIp = _uiState.value.routerIp
         if (ipSaveJob?.isActive == true) {

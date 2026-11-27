@@ -192,7 +192,7 @@ fun AdvancedVpnScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(t("Error loading VPN configurations"), fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(uiState.errorMessage ?: "", color = Color.Gray, fontSize = 14.sp)
+                    Text(uiState.errorMessage ?: "", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(24.dp))
                     Button(
                         onClick = { viewModel.loadConfig() },
@@ -212,7 +212,7 @@ fun AdvancedVpnScreen(
                     LinearProgressIndicator(
                         progress = { animatedProgress },
                         color = ArcherTeal,
-                        trackColor = Color(0xFFE0F2F1),
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(8.dp)
@@ -228,7 +228,7 @@ fun AdvancedVpnScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = uiState.loadStatus.ifEmpty { t("Fetching VPN settings...") },
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 14.sp,
                         textAlign = TextAlign.Center
                     )
@@ -246,8 +246,8 @@ fun AdvancedVpnScreen(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
@@ -263,13 +263,13 @@ fun AdvancedVpnScreen(
                                     text = t("VPN Client Settings"),
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 14.sp,
-                                    color = Color.Black
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = t("Configure connection to PPTP, L2TP, or OpenVPN servers. Enforces strict allowed SSL ciphers on HTTPS connections."),
-                                color = Color.Gray,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 12.sp
                             )
                         }
@@ -303,8 +303,8 @@ fun AdvancedVpnScreen(
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(
@@ -337,7 +337,7 @@ fun AdvancedVpnScreen(
                                                 Row(
                                                     modifier = Modifier
                                                         .fillMaxWidth()
-                                                        .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                         .clickable { typeExpanded = true }
                                                         .padding(14.dp),
                                                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -349,7 +349,7 @@ fun AdvancedVpnScreen(
                                                         "2" -> "OpenVPN"
                                                         else -> "PPTP"
                                                     }
-                                                    Text(typeStr, color = Color.Black, fontSize = 14.sp)
+                                                    Text(typeStr, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                                     Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                                 }
                                                 DropdownMenu(expanded = typeExpanded, onDismissRequest = { typeExpanded = false }) {
@@ -404,7 +404,7 @@ fun AdvancedVpnScreen(
                                                     Row(
                                                         modifier = Modifier
                                                             .fillMaxWidth()
-                                                            .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                             .clickable { authExpanded = true }
                                                             .padding(14.dp),
                                                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -417,7 +417,7 @@ fun AdvancedVpnScreen(
                                                             "3" -> "PAP"
                                                             else -> "Auto"
                                                         }
-                                                        Text(authStr, color = Color.Black, fontSize = 14.sp)
+                                                        Text(authStr, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                                         Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                                     }
                                                     DropdownMenu(expanded = authExpanded, onDismissRequest = { authExpanded = false }) {
@@ -435,7 +435,7 @@ fun AdvancedVpnScreen(
                                                     Row(
                                                         modifier = Modifier
                                                             .fillMaxWidth()
-                                                            .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                             .clickable { mppeExpanded = true }
                                                             .padding(14.dp),
                                                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -448,7 +448,7 @@ fun AdvancedVpnScreen(
                                                             "3" -> "No encryption"
                                                             else -> "Auto"
                                                         }
-                                                        Text(mppeStr, color = Color.Black, fontSize = 14.sp)
+                                                        Text(mppeStr, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                                         Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                                     }
                                                     DropdownMenu(expanded = mppeExpanded, onDismissRequest = { mppeExpanded = false }) {
@@ -495,7 +495,7 @@ fun AdvancedVpnScreen(
                                                 Row(
                                                     modifier = Modifier
                                                         .fillMaxWidth()
-                                                        .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                         .clickable { sfwExpanded = true }
                                                         .padding(14.dp),
                                                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -508,7 +508,7 @@ fun AdvancedVpnScreen(
                                                         "3" -> t("Yes (Peer only)")
                                                         else -> t("Yes (All traffic)")
                                                     }
-                                                    Text(sfwStr, color = Color.Black, fontSize = 14.sp)
+                                                    Text(sfwStr, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                                     Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                                 }
                                                 DropdownMenu(expanded = sfwExpanded, onDismissRequest = { sfwExpanded = false }) {
@@ -526,7 +526,7 @@ fun AdvancedVpnScreen(
                                                 Row(
                                                     modifier = Modifier
                                                         .fillMaxWidth()
-                                                        .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                         .clickable { pdnsExpanded = true }
                                                         .padding(14.dp),
                                                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -538,7 +538,7 @@ fun AdvancedVpnScreen(
                                                         "2" -> t("Yes (Replace standard DNS)")
                                                         else -> t("Yes (Add to top)")
                                                     }
-                                                    Text(pdnsStr, color = Color.Black, fontSize = 14.sp)
+                                                    Text(pdnsStr, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                                     Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                                 }
                                                 DropdownMenu(expanded = pdnsExpanded, onDismissRequest = { pdnsExpanded = false }) {
@@ -597,8 +597,8 @@ fun AdvancedVpnScreen(
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(
@@ -621,7 +621,7 @@ fun AdvancedVpnScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { protExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -634,7 +634,7 @@ fun AdvancedVpnScreen(
                                                 "3" -> "TCP over IPv6"
                                                 else -> "UDP"
                                             }
-                                            Text(protStr, color = Color.Black, fontSize = 14.sp)
+                                            Text(protStr, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = protExpanded, onDismissRequest = { protExpanded = false }) {
@@ -652,7 +652,7 @@ fun AdvancedVpnScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { modeExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -663,7 +663,7 @@ fun AdvancedVpnScreen(
                                                 "1" -> "TUN (IP Tunnel)"
                                                 else -> "TUN (IP Tunnel)"
                                             }
-                                            Text(modeStr, color = Color.Black, fontSize = 14.sp)
+                                            Text(modeStr, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = modeExpanded, onDismissRequest = { modeExpanded = false }) {
@@ -679,7 +679,7 @@ fun AdvancedVpnScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { ovpnAuthExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -690,7 +690,7 @@ fun AdvancedVpnScreen(
                                                 "1" -> "TLS + User/Pass Credentials"
                                                 else -> "TLS + User/Pass Credentials"
                                             }
-                                            Text(authStr, color = Color.Black, fontSize = 14.sp)
+                                            Text(authStr, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = ovpnAuthExpanded, onDismissRequest = { ovpnAuthExpanded = false }) {
@@ -706,7 +706,7 @@ fun AdvancedVpnScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { digestExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -721,7 +721,7 @@ fun AdvancedVpnScreen(
                                                 "5" -> "SHA512 (512 bit)"
                                                 else -> "SHA1"
                                             }
-                                            Text(digestStr, color = Color.Black, fontSize = 14.sp)
+                                            Text(digestStr, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = digestExpanded, onDismissRequest = { digestExpanded = false }) {
@@ -741,7 +741,7 @@ fun AdvancedVpnScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { cipherExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -765,7 +765,7 @@ fun AdvancedVpnScreen(
                                                 "14" -> "AES-256-GCM"
                                                 else -> "Blowfish"
                                             }
-                                            Text(cipherStr, color = Color.Black, fontSize = 14.sp)
+                                            Text(cipherStr, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = cipherExpanded, onDismissRequest = { cipherExpanded = false }) {
@@ -786,7 +786,7 @@ fun AdvancedVpnScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { lzoExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -799,7 +799,7 @@ fun AdvancedVpnScreen(
                                                 "3" -> "Stub Compression"
                                                 else -> "Enabled"
                                             }
-                                            Text(lzoStr, color = Color.Black, fontSize = 14.sp)
+                                            Text(lzoStr, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = lzoExpanded, onDismissRequest = { lzoExpanded = false }) {
@@ -817,7 +817,7 @@ fun AdvancedVpnScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { hmacExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -828,7 +828,7 @@ fun AdvancedVpnScreen(
                                                 "1" -> t("Yes (Additional tls-auth)")
                                                 else -> t("No")
                                             }
-                                            Text(hmacStr, color = Color.Black, fontSize = 14.sp)
+                                            Text(hmacStr, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = hmacExpanded, onDismissRequest = { hmacExpanded = false }) {
@@ -856,8 +856,8 @@ fun AdvancedVpnScreen(
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(
@@ -923,8 +923,8 @@ fun AdvancedVpnScreen(
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(
@@ -932,7 +932,7 @@ fun AdvancedVpnScreen(
                                     verticalArrangement = Arrangement.spacedBy(16.dp)
                                 ) {
                                     Text(t("Post-Connection Bash Script"), fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                    Text(t("This script runs automatically on the router after a successful VPN connection event."), color = Color.Gray, fontSize = 11.sp)
+                                    Text(t("This script runs automatically on the router after a successful VPN connection event."), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
                                     OutlinedTextField(
                                         value = config.postScript,
                                         onValueChange = { viewModel.updateConfig(config.copy(postScript = it)) },

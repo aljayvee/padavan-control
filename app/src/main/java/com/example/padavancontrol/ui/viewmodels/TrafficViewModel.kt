@@ -212,7 +212,6 @@ class TrafficViewModel(
     }
 
     public override fun onCleared() {
-        super.onCleared()
         pollingJob?.cancel()
     }
 }

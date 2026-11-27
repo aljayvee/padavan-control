@@ -78,7 +78,10 @@ class DashboardScreenTest {
         composeTestRule.onNodeWithText("RM-AC2100").assertExists()
         composeTestRule.onNodeWithText("192.168.2.1").assertExists()
         composeTestRule.onNodeWithText("Internet Connected").assertExists()
-        composeTestRule.onNodeWithText("IP: 120.24.53.111 • Type: PPPoE").assertExists()
+        composeTestRule.onNodeWithText("Connection Type: PPPoE").assertExists()
+        composeTestRule.onNodeWithText("120.24.53.111").assertExists()
+        composeTestRule.onNodeWithText("120.24.53.1").assertExists()
+        composeTestRule.onNodeWithText("8.8.8.8, 8.8.4.4").assertExists()
 
         // Verify refresh button click
         composeTestRule.onNodeWithContentDescription("Refresh").performClick()

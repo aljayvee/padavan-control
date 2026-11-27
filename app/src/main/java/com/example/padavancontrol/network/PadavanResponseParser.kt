@@ -416,6 +416,31 @@ object PadavanResponseParser {
         return ports
     }
 
+    private fun isExactAttrNameMatch(html: String, idx: Int, nameLen: Int, prefix: String): Boolean {
+        val nextChar = html.getOrNull(idx + nameLen)
+        return when {
+            prefix.endsWith("name=\"") || prefix.endsWith("id=\"") -> nextChar == '"'
+            prefix.endsWith("name='") || prefix.endsWith("id='") -> nextChar == '\''
+            prefix.endsWith("name=") || prefix.endsWith("id=") ->
+                nextChar == null || nextChar.isWhitespace() || nextChar == '>' || nextChar == '/'
+            else -> false
+        }
+    }
+
+    private fun isIdentifierBoundary(html: String, endIdx: Int): Boolean {
+        val nextChar = html.getOrNull(endIdx) ?: return true
+        return !nextChar.isLetterOrDigit() && nextChar != '_' && nextChar != '-'
+    }
+
+    private fun decodeUriComponent(value: String): String {
+        if (value.isEmpty()) return value
+        return try {
+            java.net.URLDecoder.decode(value.replace("+", "%2B"), "UTF-8")
+        } catch (e: Exception) {
+            value
+        }
+    }
+
     fun extractValue(html: String, name: String): String {
         if (name.isEmpty()) return ""
         // Optimized linear parsing
@@ -423,10 +448,11 @@ object PadavanResponseParser {
         while (true) {
             val idx = html.indexOf(name, searchIndex, ignoreCase = true)
             if (idx == -1) break
+            val endIdx = idx + name.length
             
             // Check if this is an input/select field like name="varname" or id="varname"
             val prefix = html.substring(maxOf(0, idx - 10), idx)
-            if (prefix.endsWith("name=\"") || prefix.endsWith("name='") || prefix.endsWith("name=") || prefix.endsWith("id=\"")) {
+            if (isExactAttrNameMatch(html, idx, name.length, prefix)) {
                 val tagStart = html.lastIndexOf("<", idx)
                 val tagEnd = html.indexOf(">", idx)
                 if (tagStart != -1 && tagEnd != -1 && tagStart < tagEnd) {
@@ -456,10 +482,10 @@ object PadavanResponseParser {
             
             // Check JS assignment: document.form.varname.value = '123'
             val jsPrefix = html.substring(maxOf(0, idx - 15), idx)
-            if (jsPrefix.contains("document.form.")) {
+            if (jsPrefix.endsWith("document.form.") && html.startsWith(".value", endIdx, ignoreCase = true)) {
                 val lineEnd = html.indexOf("\n", idx).takeIf { it != -1 } ?: html.length
-                val lineStr = html.substring(idx, lineEnd)
-                val jsMatch = cachedPattern("\\.value\\s*=\\s*['\"](.*?)['\"]", Pattern.CASE_INSENSITIVE).matcher(lineStr)
+                val lineStr = html.substring(endIdx, lineEnd)
+                val jsMatch = cachedPattern("^\\.value\\s*=\\s*['\"](.*?)['\"]", Pattern.CASE_INSENSITIVE).matcher(lineStr)
                 if (jsMatch.find()) {
                     return jsMatch.group(1) ?: ""
                 }
@@ -467,29 +493,34 @@ object PadavanResponseParser {
             
             // Check JS var assignment: var varname = '123'
             val jsVarPrefix = html.substring(maxOf(0, idx - 10), idx)
-            if (jsVarPrefix.matches(Regex("(?s).*var\\s+$", RegexOption.IGNORE_CASE))) {
+            if (isIdentifierBoundary(html, endIdx) && jsVarPrefix.matches(Regex("(?s).*var\\s+$", RegexOption.IGNORE_CASE))) {
                 val lineEnd = html.indexOf("\n", idx).takeIf { it != -1 } ?: html.length
-                val lineStr = html.substring(idx, lineEnd)
-                val jsMatch = cachedPattern("=\\s*['\"](.*?)['\"]", Pattern.CASE_INSENSITIVE).matcher(lineStr)
+                val lineStr = html.substring(endIdx, lineEnd)
+                val jsMatch = cachedPattern("^\\s*=\\s*['\"](.*?)['\"]", Pattern.CASE_INSENSITIVE).matcher(lineStr)
                 if (jsMatch.find()) {
                     return jsMatch.group(1) ?: ""
                 }
             }
             
-            searchIndex = maxOf(searchIndex + 1, idx + name.length)
+            searchIndex = maxOf(searchIndex + 1, endIdx)
         }
         return ""
+    }
+
+    private fun hasFieldInHtml(html: String, name: String): Boolean {
+        return html.contains("name=\"$name\"", ignoreCase = true) ||
+               html.contains("name='$name'", ignoreCase = true) ||
+               html.contains("name=$name ", ignoreCase = true) ||
+               html.contains("name=$name>", ignoreCase = true) ||
+               html.contains("document.form.$name.", ignoreCase = true) ||
+               html.contains("var $name ", ignoreCase = true) ||
+               html.contains("var $name=", ignoreCase = true)
     }
 
     private fun extractValueOrKeep(html: String, name: String, fallback: String): String {
         val extracted = extractValue(html, name)
         if (extracted.isEmpty()) {
-            val exists = html.contains("name=\"$name\"", ignoreCase = true) || 
-                         html.contains("name='$name'", ignoreCase = true) || 
-                         html.contains("name=$name", ignoreCase = true) || 
-                         html.contains("document.form.$name", ignoreCase = true) ||
-                         html.contains("var $name", ignoreCase = true)
-            if (!exists) return fallback
+            if (!hasFieldInHtml(html, name)) return fallback
         }
         return extracted
     }
@@ -522,17 +553,18 @@ object PadavanResponseParser {
             while (true) {
                 val idx = html.indexOf(searchName, searchIndex, ignoreCase = true)
                 if (idx == -1) break
+                val endIdx = idx + searchName.length
                 
                 val prefix = html.substring(maxOf(0, idx - 10), idx)
-                if (prefix.endsWith("name=\"") || prefix.endsWith("name='") || prefix.endsWith("name=") || prefix.endsWith("id=\"")) {
+                if (isExactAttrNameMatch(html, idx, searchName.length, prefix)) {
                     val tagStart = html.lastIndexOf("<", idx)
                     val tagEnd = html.indexOf(">", idx)
                     if (tagStart != -1 && tagEnd != -1 && tagStart < tagEnd) {
                         val tagStr = html.substring(tagStart, tagEnd + 1).replace("'", "\"")
                         
                         val isChecked = tagStr.contains("checked", ignoreCase = true) || tagStr.contains("value=\"1 checked\"", ignoreCase = true)
-                        val valMatcher = cachedPattern("value=\"([^\"]*)\"", Pattern.CASE_INSENSITIVE).matcher(tagStr)
-                        val thisValue = if (valMatcher.find()) valMatcher.group(1) ?: "" else ""
+                        val valMatcher = cachedPattern("value=(?:\"([^\"]*)\"|([^\"'>\\s]*))", Pattern.CASE_INSENSITIVE).matcher(tagStr)
+                        val thisValue = if (valMatcher.find()) (valMatcher.group(1) ?: valMatcher.group(2) ?: "") else ""
                         val typeMatcher = cachedPattern("type=\"([^\"]*)\"", Pattern.CASE_INSENSITIVE).matcher(tagStr)
                         val type = if (typeMatcher.find()) typeMatcher.group(1)?.lowercase() else ""
                         
@@ -552,16 +584,16 @@ object PadavanResponseParser {
                 
                 // Check JS var assignment for boolean (1/0 or '1'/'0')
                 val jsVarPrefix = html.substring(maxOf(0, idx - 10), idx)
-                if (jsVarPrefix.matches(Regex("(?s).*var\\s+$", RegexOption.IGNORE_CASE))) {
+                if (isIdentifierBoundary(html, endIdx) && jsVarPrefix.matches(Regex("(?s).*var\\s+$", RegexOption.IGNORE_CASE))) {
                     val lineEnd = html.indexOf("\n", idx).takeIf { it != -1 } ?: html.length
-                    val lineStr = html.substring(idx, lineEnd)
-                    val jsMatch = cachedPattern("=\\s*['\"]?(1|0|true|false)['\"]?", Pattern.CASE_INSENSITIVE).matcher(lineStr)
+                    val lineStr = html.substring(endIdx, lineEnd)
+                    val jsMatch = cachedPattern("^\\s*=\\s*['\"]?(1|0|true|false)['\"]?", Pattern.CASE_INSENSITIVE).matcher(lineStr)
                     if (jsMatch.find()) {
                         jsVarValue = jsMatch.group(1)
                     }
                 }
                 
-                searchIndex = maxOf(searchIndex + 1, idx + searchName.length)
+                searchIndex = maxOf(searchIndex + 1, endIdx)
             }
         }
         
@@ -592,9 +624,7 @@ object PadavanResponseParser {
         if (ssid.isEmpty()) {
             ssid = extractValueOrKeep(html, "${prefix}ssid", existingConfig.ssid)
         }
-        try {
-            ssid = java.net.URLDecoder.decode(ssid, "UTF-8")
-        } catch (e: Exception) {}
+        ssid = decodeUriComponent(ssid)
 
         // Broadcast SSID closed
         val isClosed = extractBoolOrKeep(html, "${prefix}closed", existingConfig.isClosed)
@@ -611,8 +641,12 @@ object PadavanResponseParser {
             channel = extractValueOrKeep(html, "${prefix}channel", existingConfig.channel)
         }
 
-        // Extension Channel
-        val extChannel = extractValueOrKeep(html, "${prefix}HT_EXTCHA", existingConfig.extChannel)
+        // Extension Channel (Advanced_Wireless2g_Content.asp stores the NVRAM
+        // value in rt_HT_EXTCHA_old while the <select> defaults to 0).
+        var extChannel = extractValueOrKeep(html, "${prefix}HT_EXTCHA_old", "")
+        if (extChannel.isEmpty()) {
+            extChannel = extractValueOrKeep(html, "${prefix}HT_EXTCHA", existingConfig.extChannel)
+        }
 
         // Auth Mode
         val authMode = extractValueOrKeep(html, "${prefix}auth_mode", existingConfig.authMode)
@@ -623,12 +657,13 @@ object PadavanResponseParser {
 
         // Key / Password
         var wpaPsk = extractValueOrKeep(html, "${prefix}wpa_psk_org", "")
-        if (wpaPsk.isEmpty()) {
+        if (wpaPsk.isEmpty() && !hasFieldInHtml(html, "${prefix}wpa_psk_org")) {
             wpaPsk = extractValueOrKeep(html, "${prefix}wpa_psk", existingConfig.wpaPsk)
         }
-        try {
-            wpaPsk = java.net.URLDecoder.decode(wpaPsk, "UTF-8")
-        } catch (e: Exception) {}
+        wpaPsk = decodeUriComponent(wpaPsk)
+        if (wpaPsk == "Please type Password") {
+            wpaPsk = ""
+        }
 
         // Network Key Rotation
         val wpaGtkRekey = extractIntOrKeep(html, "${prefix}wpa_gtk_rekey", existingConfig.wpaGtkRekey)
@@ -644,12 +679,10 @@ object PadavanResponseParser {
         // Guest AP Settings
         val guestEnabled = extractBoolOrKeep(html, "${prefix}guest_enable", existingConfig.guestEnabled)
         var guestSsid = extractValueOrKeep(html, "${prefix}guest_ssid_org", "")
-        if (guestSsid.isEmpty()) {
+        if (guestSsid.isEmpty() && !hasFieldInHtml(html, "${prefix}guest_ssid_org")) {
             guestSsid = extractValueOrKeep(html, "${prefix}guest_ssid", existingConfig.guestSsid)
         }
-        try {
-            guestSsid = java.net.URLDecoder.decode(guestSsid, "UTF-8")
-        } catch (e: Exception) {}
+        guestSsid = decodeUriComponent(guestSsid)
 
         val guestClosed = extractBoolOrKeep(html, "${prefix}guest_closed", existingConfig.guestClosed)
         val guestLanIsolate = extractBoolOrKeep(html, "${prefix}guest_lan_isolate", existingConfig.guestLanIsolate)
@@ -659,12 +692,10 @@ object PadavanResponseParser {
         val guestWpaMode = extractValueOrKeep(html, "${prefix}guest_wpa_mode", existingConfig.guestWpaMode)
         val guestCrypto = extractValueOrKeep(html, "${prefix}guest_crypto", existingConfig.guestCrypto)
         var guestWpaPsk = extractValueOrKeep(html, "${prefix}guest_wpa_psk_org", "")
-        if (guestWpaPsk.isEmpty()) {
+        if (guestWpaPsk.isEmpty() && !hasFieldInHtml(html, "${prefix}guest_wpa_psk_org")) {
             guestWpaPsk = extractValueOrKeep(html, "${prefix}guest_wpa_psk", existingConfig.guestWpaPsk)
         }
-        try {
-            guestWpaPsk = java.net.URLDecoder.decode(guestWpaPsk, "UTF-8")
-        } catch (e: Exception) {}
+        guestWpaPsk = decodeUriComponent(guestWpaPsk)
         val guestMacRule = extractBoolOrKeep(html, "${prefix}guest_macrule", existingConfig.guestMacRule)
         val guestDate = extractValueOrKeep(html, "${prefix}guest_date_x", existingConfig.guestDate)
         val guestTimeWorkweek = extractValueOrKeep(html, "${prefix}guest_time_x", existingConfig.guestTimeWorkweek)
@@ -674,23 +705,19 @@ object PadavanResponseParser {
         val modeX = extractValueOrKeep(html, "${prefix}mode_x", existingConfig.modeX)
         val staWisp = extractValueOrKeep(html, "${prefix}sta_wisp", existingConfig.staWisp)
         var staSsid = extractValueOrKeep(html, "${prefix}sta_ssid_org", "")
-        if (staSsid.isEmpty()) {
+        if (staSsid.isEmpty() && !hasFieldInHtml(html, "${prefix}sta_ssid_org")) {
             staSsid = extractValueOrKeep(html, "${prefix}sta_ssid", existingConfig.staSsid)
         }
-        try {
-            staSsid = java.net.URLDecoder.decode(staSsid, "UTF-8")
-        } catch (e: Exception) {}
+        staSsid = decodeUriComponent(staSsid)
 
         val staAuthMode = extractValueOrKeep(html, "${prefix}sta_auth_mode", existingConfig.staAuthMode)
         val staWpaMode = extractValueOrKeep(html, "${prefix}sta_wpa_mode", existingConfig.staWpaMode)
         val staCrypto = extractValueOrKeep(html, "${prefix}sta_crypto", existingConfig.staCrypto)
         var staWpaPsk = extractValueOrKeep(html, "${prefix}sta_wpa_psk_org", "")
-        if (staWpaPsk.isEmpty()) {
+        if (staWpaPsk.isEmpty() && !hasFieldInHtml(html, "${prefix}sta_wpa_psk_org")) {
             staWpaPsk = extractValueOrKeep(html, "${prefix}sta_wpa_psk", existingConfig.staWpaPsk)
         }
-        try {
-            staWpaPsk = java.net.URLDecoder.decode(staWpaPsk, "UTF-8")
-        } catch (e: Exception) {}
+        staWpaPsk = decodeUriComponent(staWpaPsk)
 
         val staAuto = extractValueOrKeep(html, "${prefix}sta_auto", existingConfig.staAuto)
 
@@ -1654,7 +1681,11 @@ object PadavanResponseParser {
         val ntpServer1 = extractValueOrKeep(html, "ntp_server0", existingConfig.ntpServer1)
         val ntpServer2 = extractValueOrKeep(html, "ntp_server1", existingConfig.ntpServer2)
         
-        val deviceName = extractValueOrKeep(html, "computer_name", existingConfig.deviceName)
+        var deviceName = extractValueOrKeep(html, "computer_name2", "")
+        if (deviceName.isEmpty()) {
+            deviceName = extractValueOrKeep(html, "computer_name", existingConfig.deviceName)
+        }
+        deviceName = decodeUriComponent(deviceName)
         val ntpPeriod = extractValueOrKeep(html, "ntp_period", existingConfig.ntpPeriod)
         val logIpAddr = extractValueOrKeep(html, "log_ipaddr", existingConfig.logIpAddr)
         val logPort = extractValueOrKeep(html, "log_port", existingConfig.logPort)
@@ -1896,9 +1927,7 @@ object PadavanResponseParser {
                             continue
                         }
                         var ssid = items.getOrNull(0) ?: ""
-                        try {
-                            ssid = java.net.URLDecoder.decode(ssid, "UTF-8")
-                        } catch (e: Exception) {}
+                        ssid = decodeUriComponent(ssid)
                         val channel = (items.getOrNull(2) ?: "0").filter { it.isDigit() }.takeIf { it.isNotEmpty() } ?: "0"
                         val sig = items.getOrNull(3) ?: "0"
                         val signal = sig.replace("%", "").replace("dBm", "").trim().toIntOrNull() ?: 0
