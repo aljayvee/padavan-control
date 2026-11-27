@@ -60,6 +60,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -82,6 +83,7 @@ import com.example.padavancontrol.ui.viewmodels.AdvancedAdminViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.padavancontrol.data.models.AdminConfig
 import com.example.padavancontrol.theme.ArcherTeal
+import com.example.padavancontrol.theme.ArcherWarning
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -93,9 +95,9 @@ fun AdvancedAdminScreen(
     viewModel: AdvancedAdminViewModel,
     repository: PadavanRepository,
     onNavigateBack: () -> Unit,
+    modifier: Modifier = Modifier,
     onNavigateToTtydWebShell: () -> Unit = {},
-    settingsDataStore: SettingsDataStore? = null,
-    modifier: Modifier = Modifier
+    settingsDataStore: SettingsDataStore? = null
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -168,7 +170,7 @@ fun AdvancedAdminScreen(
     var selectedStorageName by remember { mutableStateOf("") }
 
     var isUploading by remember { mutableStateOf(false) }
-    var uploadProgress by remember { mutableStateOf(0f) }
+    var uploadProgress by remember { mutableFloatStateOf(0f) }
     var uploadStatus by remember { mutableStateOf("") }
     var showUploadDialog by remember { mutableStateOf(false) }
 
@@ -402,7 +404,7 @@ fun AdvancedAdminScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     Text("Error loading settings", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(uiState.errorMessage ?: "", color = Color.Gray, fontSize = 14.sp)
+                    Text(uiState.errorMessage ?: "", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(24.dp))
                     Button(
                         onClick = { viewModel.loadConfig(pagePath) },
@@ -422,7 +424,7 @@ fun AdvancedAdminScreen(
                     LinearProgressIndicator(
                         progress = { animatedProgress },
                         color = ArcherTeal,
-                        trackColor = Color(0xFFE0F2F1),
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(8.dp)
@@ -438,7 +440,7 @@ fun AdvancedAdminScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = uiState.loadStatus.ifEmpty { "Fetching Administration settings..." },
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 14.sp,
                         textAlign = TextAlign.Center
                     )
@@ -458,8 +460,8 @@ fun AdvancedAdminScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -515,31 +517,75 @@ fun AdvancedAdminScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
                                     Text("NTP System Time Sync", fontWeight = FontWeight.Bold, color = ArcherTeal, modifier = Modifier.padding(bottom = 16.dp))
 
                                     // Timezone selector
+                                    val timezoneOptions = listOf(
+                                        "UCT12" to "(GMT-12:00) Eniwetok, Kwajalein",
+                                        "UCT11" to "(GMT-11:00) Midway Island, Samoa",
+                                        "UCT10" to "(GMT-10:00) Hawaii",
+                                        "NAST9NADT" to "(GMT-09:00) Anchorage (Alaska)",
+                                        "PST8PDT" to "(GMT-08:00) Pacific Time (USA & Canada)",
+                                        "MST7MDT" to "(GMT-07:00) Mountain Time (USA & Canada)",
+                                        "CST6CDT_1" to "(GMT-06:00) Central Time (USA & Canada)",
+                                        "EST5EDT" to "(GMT-05:00) Eastern Time (USA & Canada)",
+                                        "AST4ADT" to "(GMT-04:00) Atlantic Time (Canada)",
+                                        "BRT3BRST" to "(GMT-03:00) Brasilia, Sao Paulo",
+                                        "UCT2" to "(GMT-02:00) Mid-Atlantic",
+                                        "UCT1" to "(GMT-01:00) Cape Verde Is.",
+                                        "GMT0BST_1" to "(GMT) Greenwich Mean Time",
+                                        "MEZ-1MESZ" to "(GMT+01:00) Amsterdam, Berlin, Bern",
+                                        "MET-1METDST_1" to "(GMT+01:00) Madrid, Paris",
+                                        "EET-2EETDST" to "(GMT+02:00) Eastern Europe / Ukraine",
+                                        "EET-2EETDST_1" to "(GMT+02:00) Helsinki, Riga, Tallinn",
+                                        "UTC-3" to "(GMT+03:00) Moscow, St. Petersburg, Volgograd",
+                                        "UCT-3_1" to "(GMT+03:00) Minsk, Kuwait, Riyadh",
+                                        "UCT-4_1" to "(GMT+04:00) Abu Dhabi, Muscat",
+                                        "UTC-5" to "(GMT+05:00) Ekaterinburg",
+                                        "UCT-5" to "(GMT+05:00) Islamabad, Karachi, Tashkent",
+                                        "UCT-5.30_1" to "(GMT+05:30) Mumbai, New Delhi",
+                                        "UCT-6" to "(GMT+06:00) Astana, Dhaka",
+                                        "UCT-7" to "(GMT+07:00) Bangkok, Hanoi, Jakarta",
+                                        "CST-8" to "(GMT+08:00) Beijing, Hong Kong",
+                                        "SST-8" to "(GMT+08:00) Kuala Lumpur, Singapore",
+                                        "CCT-8" to "(GMT+08:00) Taipei",
+                                        "JST" to "(GMT+09:00) Osaka, Sapporo, Tokyo",
+                                        "UCT-9_1" to "(GMT+09:00) Seoul",
+                                        "EST-10EDT" to "(GMT+10:00) Canberra, Melbourne, Sydney",
+                                        "UTC-10" to "(GMT+10:00) Vladivostok, Magadan",
+                                        "UCT-11" to "(GMT+11:00) Solomon Is.",
+                                        "NZST-12NZDT" to "(GMT+12:00) Auckland, Wellington"
+                                    )
+                                    val selectedTzLabel = timezoneOptions.firstOrNull { it.first == uiState.config.timezone }?.second
+                                        ?: uiState.config.timezone
                                     Text("GMT Timezone", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
                                     Box(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { timezoneExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text(uiState.config.timezone, color = Color.Black, fontSize = 14.sp)
+                                            Text(selectedTzLabel, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = timezoneExpanded, onDismissRequest = { timezoneExpanded = false }) {
-                                            listOf("GMT-12:00", "GMT-8:00", "GMT-5:00", "GMT", "GMT+1:00", "GMT+2:00", "GMT+3:00", "GMT+8:00 (Asia/Shanghai)", "GMT+9:00", "GMT+10:00").forEach { tz ->
-                                                DropdownMenuItem(text = { Text(tz) }, onClick = { viewModel.updateConfig(uiState.config.copy(timezone = tz)); timezoneExpanded = false })
+                                            timezoneOptions.forEach { (tzCode, tzLabel) ->
+                                                DropdownMenuItem(
+                                                    text = { Text(tzLabel) },
+                                                    onClick = {
+                                                        viewModel.updateConfig(uiState.config.copy(timezone = tzCode))
+                                                        timezoneExpanded = false
+                                                    }
+                                                )
                                             }
                                         }
                                     }
@@ -550,7 +596,7 @@ fun AdvancedAdminScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { ntpPeriodExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -564,7 +610,7 @@ fun AdvancedAdminScreen(
                                                 "72" -> "3 days"
                                                 else -> "1 day (*)"
                                             }
-                                            Text(desc, color = Color.Black, fontSize = 14.sp)
+                                            Text(desc, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = ntpPeriodExpanded, onDismissRequest = { ntpPeriodExpanded = false }) {
@@ -596,8 +642,8 @@ fun AdvancedAdminScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -622,7 +668,7 @@ fun AdvancedAdminScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { logFloatUiExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -634,7 +680,7 @@ fun AdvancedAdminScreen(
                                                 "2" -> "Last 100 lines"
                                                 else -> "Yes (*)"
                                             }
-                                            Text(desc, color = Color.Black, fontSize = 14.sp)
+                                            Text(desc, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = logFloatUiExpanded, onDismissRequest = { logFloatUiExpanded = false }) {
@@ -658,7 +704,7 @@ fun AdvancedAdminScreen(
                                     )
                                     Text(
                                         "Controls language for the router Web UI and/or this mobile app.",
-                                        color = Color.Gray,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontSize = 12.sp,
                                         modifier = Modifier.padding(bottom = 12.dp)
                                     )
@@ -698,7 +744,7 @@ fun AdvancedAdminScreen(
                                     Column(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(10.dp))
+                                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(10.dp))
                                             .padding(bottom = 4.dp)
                                     ) {
                                         langModes.forEachIndexed { index, mode ->
@@ -750,18 +796,18 @@ fun AdvancedAdminScreen(
                                                         mode.label,
                                                         fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                                                         fontSize = 14.sp,
-                                                        color = if (isSelected) ArcherTeal else Color.Black
+                                                        color = if (isSelected) ArcherTeal else MaterialTheme.colorScheme.onSurface
                                                     )
                                                     Text(
                                                         mode.subtitle,
                                                         fontSize = 11.sp,
-                                                        color = Color.Gray
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                                     )
                                                 }
                                             }
                                             if (index < langModes.lastIndex) {
                                                 androidx.compose.material3.HorizontalDivider(
-                                                    color = Color(0xFFEEEEEE),
+                                                    color = MaterialTheme.colorScheme.outlineVariant,
                                                     thickness = 1.dp
                                                 )
                                             }
@@ -777,7 +823,7 @@ fun AdvancedAdminScreen(
                                     ) {
                                         Column {
                                             Text("Enable Context Help", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Show explanatory tooltips on fields click", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Show explanatory tooltips on fields click", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.helpEnable,
@@ -795,8 +841,8 @@ fun AdvancedAdminScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -808,7 +854,7 @@ fun AdvancedAdminScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { httpProtoExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -820,7 +866,7 @@ fun AdvancedAdminScreen(
                                                 "2" -> "HTTP & HTTPS"
                                                 else -> "HTTP Only"
                                             }
-                                            Text(desc, color = Color.Black, fontSize = 14.sp)
+                                            Text(desc, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = httpProtoExpanded, onDismissRequest = { httpProtoExpanded = false }) {
@@ -862,7 +908,7 @@ fun AdvancedAdminScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { httpAccessExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -874,7 +920,7 @@ fun AdvancedAdminScreen(
                                                 "2" -> "Wired and MainAP clients"
                                                 else -> "No"
                                             }
-                                            Text(desc, color = Color.Black, fontSize = 14.sp)
+                                            Text(desc, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = httpAccessExpanded, onDismissRequest = { httpAccessExpanded = false }) {
@@ -891,8 +937,8 @@ fun AdvancedAdminScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -905,7 +951,7 @@ fun AdvancedAdminScreen(
                                     ) {
                                         Column {
                                             Text("Enable Telnet Daemon", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Permit unencrypted terminal link", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Permit unencrypted terminal link", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.enableTelnet,
@@ -931,8 +977,8 @@ fun AdvancedAdminScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -943,7 +989,7 @@ fun AdvancedAdminScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { sshdEnableExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -955,7 +1001,7 @@ fun AdvancedAdminScreen(
                                                 "2" -> "Yes (authorized_keys only)"
                                                 else -> "Yes"
                                             }
-                                            Text(desc, color = Color.Black, fontSize = 14.sp)
+                                            Text(desc, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = sshdEnableExpanded, onDismissRequest = { sshdEnableExpanded = false }) {
@@ -983,7 +1029,7 @@ fun AdvancedAdminScreen(
                                         ) {
                                             Column {
                                                 Text("Enable SFTP Filesystem Mode", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                                Text("Allows encrypted files transfer via SSH subsystem", color = Color.Gray, fontSize = 12.sp)
+                                                Text("Allows encrypted files transfer via SSH subsystem", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                             }
                                             Switch(
                                                 checked = uiState.config.enableSftp,
@@ -1000,7 +1046,7 @@ fun AdvancedAdminScreen(
                                     ) {
                                         Column {
                                             Text("Enable WebDAV Service", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Exposes HTTP file-sharing endpoints for networks", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Exposes HTTP file-sharing endpoints for networks", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.enableWebdav,
@@ -1016,8 +1062,8 @@ fun AdvancedAdminScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -1030,7 +1076,7 @@ fun AdvancedAdminScreen(
                                     ) {
                                         Column {
                                             Text("Enable WINS Service", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Resolve NetBIOS names on local network", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Resolve NetBIOS names on local network", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.winsEnable,
@@ -1052,7 +1098,7 @@ fun AdvancedAdminScreen(
                                             Row(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                     .clickable { stSambaLmbExpanded = true }
                                                     .padding(14.dp),
                                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1064,7 +1110,7 @@ fun AdvancedAdminScreen(
                                                     "2" -> "Local & Domain Master Browser"
                                                     else -> "Local Master Browser"
                                                 }
-                                                Text(desc, color = Color.Black, fontSize = 14.sp)
+                                                Text(desc, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                                 Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                             }
                                             DropdownMenu(expanded = stSambaLmbExpanded, onDismissRequest = { stSambaLmbExpanded = false }) {
@@ -1082,8 +1128,8 @@ fun AdvancedAdminScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -1096,7 +1142,7 @@ fun AdvancedAdminScreen(
                                     ) {
                                         Column {
                                             Text("Enable ttyd Web Shell", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Allows Web access to command shell terminal", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Allows Web access to command shell terminal", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.ttydEnable,
@@ -1132,8 +1178,8 @@ fun AdvancedAdminScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -1146,7 +1192,7 @@ fun AdvancedAdminScreen(
                                     ) {
                                         Column {
                                             Text("Enable vlmcsd (KMS Server)", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Activates KMS client licensing on networks", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Activates KMS client licensing on networks", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.vlmcsdEnable,
@@ -1162,7 +1208,7 @@ fun AdvancedAdminScreen(
                                     ) {
                                         Column {
                                             Text("Enable napt66 (IPv6 NAT)", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Translates IPv6 local addresses after reboot", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Translates IPv6 local addresses after reboot", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.napt66Enable,
@@ -1178,7 +1224,7 @@ fun AdvancedAdminScreen(
                                     ) {
                                         Column {
                                             Text("LLTD Service", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Link Layer Topology Discovery protocol daemon", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Link Layer Topology Discovery protocol daemon", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.lltdEnable,
@@ -1194,7 +1240,7 @@ fun AdvancedAdminScreen(
                                     ) {
                                         Column {
                                             Text("ASUS Discovery Service", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Allows discovery by router utilities", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Allows discovery by router utilities", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.adscEnable,
@@ -1210,7 +1256,7 @@ fun AdvancedAdminScreen(
                                     ) {
                                         Column {
                                             Text("Cron Daemon (Scheduler)", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Allows task scheduling via crontabs", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Allows task scheduling via crontabs", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.crondEnable,
@@ -1226,7 +1272,7 @@ fun AdvancedAdminScreen(
                                     ) {
                                         Column {
                                             Text("Hardware Watchdog Timer", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Automatically reboots router on CPU freeze", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Automatically reboots router on CPU freeze", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.watchdogCpu,
@@ -1243,8 +1289,8 @@ fun AdvancedAdminScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(bottom = 16.dp)
-                                        .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Column(modifier = Modifier.padding(16.dp)) {
@@ -1269,8 +1315,8 @@ fun AdvancedAdminScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -1281,16 +1327,16 @@ fun AdvancedAdminScreen(
                                             .fillMaxWidth()
                                             .padding(bottom = 16.dp)
                                             .clip(RoundedCornerShape(8.dp))
-                                            .background(Color(0xFFFFF9E6))
-                                            .border(1.dp, Color(0xFFFFCC00), RoundedCornerShape(8.dp))
+                                            .background(ArcherWarning.copy(alpha = 0.15f))
+                                            .border(1.dp, ArcherWarning.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
                                             .padding(12.dp)
                                     ) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(imageVector = Icons.Default.Warning, contentDescription = "warning", tint = Color(0xFFFF9900))
+                                            Icon(imageVector = Icons.Default.Warning, contentDescription = "warning", tint = ArcherWarning)
                                             Spacer(modifier = Modifier.width(8.dp))
                                             Text(
                                                 "CRITICAL: Modifying the operation mode will erase temporary states and automatically REBOOT the physical router! Ensure you are ready.",
-                                                color = Color(0xFF996600),
+                                                color = MaterialTheme.colorScheme.onSurface,
                                                 fontSize = 11.sp
                                             )
                                         }
@@ -1313,7 +1359,7 @@ fun AdvancedAdminScreen(
                                             colors = RadioButtonDefaults.colors(selectedColor = ArcherTeal)
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
-                                        Text("Wireless Radio (default) / Gateway Mode", color = Color.Black, fontSize = 14.sp)
+                                        Text("Wireless Radio (default) / Gateway Mode", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                     }
                                     
                                     Row(
@@ -1329,7 +1375,7 @@ fun AdvancedAdminScreen(
                                             colors = RadioButtonDefaults.colors(selectedColor = ArcherTeal)
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
-                                        Text("Access Point Mode (AP)", color = Color.Black, fontSize = 14.sp)
+                                        Text("Access Point Mode (AP)", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                     }
                                 }
                             }
@@ -1340,8 +1386,8 @@ fun AdvancedAdminScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -1356,7 +1402,7 @@ fun AdvancedAdminScreen(
                                         "5. After receiving a correct firmware file, router will automatically start the upgrade process. The system reboots after the upgrading process is finished."
                                     )
                                     steps.forEach { step ->
-                                        Text(step, fontSize = 12.sp, color = Color.DarkGray, modifier = Modifier.padding(vertical = 2.dp))
+                                        Text(step, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 2.dp))
                                     }
                                 }
                             }
@@ -1365,8 +1411,8 @@ fun AdvancedAdminScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -1376,16 +1422,16 @@ fun AdvancedAdminScreen(
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
                                     ) {
-                                        Text("Product ID:", fontWeight = FontWeight.SemiBold, color = Color.Gray, fontSize = 14.sp)
-                                        Text(uiState.config.productId.ifEmpty { "RT-N56U" }, fontWeight = FontWeight.Bold, color = Color.Black, fontSize = 14.sp)
+                                        Text("Product ID:", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                                        Text(uiState.config.productId.ifEmpty { "RT-N56U" }, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                     }
 
                                     Row(
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
                                     ) {
-                                        Text("Firmware Version:", fontWeight = FontWeight.SemiBold, color = Color.Gray, fontSize = 14.sp)
-                                        Text(uiState.config.firmwareVersion, fontWeight = FontWeight.Bold, color = Color.Black, fontSize = 14.sp)
+                                        Text("Firmware Version:", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                                        Text(uiState.config.firmwareVersion, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                     }
 
                                     Spacer(modifier = Modifier.height(16.dp))
@@ -1397,7 +1443,7 @@ fun AdvancedAdminScreen(
                                     ) {
                                         Button(
                                             onClick = { firmwarePicker.launch("*/*") },
-                                            colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray, contentColor = Color.DarkGray)
+                                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
                                         ) {
                                             Text("Choose File (.trx)")
                                         }
@@ -1405,7 +1451,7 @@ fun AdvancedAdminScreen(
                                         Text(
                                             text = selectedFirmwareName.ifEmpty { "No file chosen" },
                                             fontSize = 13.sp,
-                                            color = if (selectedFirmwareUri != null) Color.Black else Color.Gray,
+                                            color = if (selectedFirmwareUri != null) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                                             maxLines = 1
                                         )
                                     }
@@ -1459,11 +1505,11 @@ fun AdvancedAdminScreen(
                                     Button(
                                         onClick = { checkFirmwareUpgrade() },
                                         enabled = !isCheckingUpgrade,
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray, contentColor = Color.DarkGray),
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
                                         if (isCheckingUpgrade) {
-                                            CircularProgressIndicator(color = Color.DarkGray, modifier = Modifier.size(20.dp))
+                                            CircularProgressIndicator(color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
                                         } else {
                                             Text("Check for Online Upgrades 🔄")
                                         }
@@ -1475,18 +1521,18 @@ fun AdvancedAdminScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
-                                    Text("Upgrade Process Notes", fontWeight = FontWeight.Bold, color = Color.Gray, fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
+                                    Text("Upgrade Process Notes", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
                                     Text(
                                         "Note:\n" +
                                         "For a configuration parameter existing both in the old and new firmware, its setting will be kept during the upgrade process.\n" +
                                         "In case the upgrade process fails, router enters the emergency mode automatically. The LED signals at the front panel will indicate such situation. Use the Firmware Restoration utility on the CD to do system recovery.",
                                         fontSize = 12.sp,
-                                        color = Color.Gray
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
@@ -1584,8 +1630,8 @@ fun AdvancedAdminScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -1619,7 +1665,7 @@ fun AdvancedAdminScreen(
                                     ) {
                                         Button(
                                             onClick = { settingsPicker.launch("*/*") },
-                                            colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray, contentColor = Color.DarkGray)
+                                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
                                         ) {
                                             Text("Choose File (.CFG)")
                                         }
@@ -1627,7 +1673,7 @@ fun AdvancedAdminScreen(
                                         Text(
                                             text = selectedSettingsName.ifEmpty { "No file chosen" },
                                             fontSize = 13.sp,
-                                            color = if (selectedSettingsUri != null) Color.Black else Color.Gray,
+                                            color = if (selectedSettingsUri != null) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                                             maxLines = 1,
                                             modifier = Modifier.weight(1f)
                                         )
@@ -1648,7 +1694,7 @@ fun AdvancedAdminScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { nvramManualExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -1659,7 +1705,7 @@ fun AdvancedAdminScreen(
                                                 "1" -> "Manual Commit only"
                                                 else -> "Auto Commit on apply"
                                             }
-                                            Text(desc, color = Color.Black, fontSize = 14.sp)
+                                            Text(desc, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = nvramManualExpanded, onDismissRequest = { nvramManualExpanded = false }) {
@@ -1691,8 +1737,8 @@ fun AdvancedAdminScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -1726,7 +1772,7 @@ fun AdvancedAdminScreen(
                                     ) {
                                         Button(
                                             onClick = { storagePicker.launch("*/*") },
-                                            colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray, contentColor = Color.DarkGray)
+                                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
                                         ) {
                                             Text("Choose File (.TBZ)")
                                         }
@@ -1734,7 +1780,7 @@ fun AdvancedAdminScreen(
                                         Text(
                                             text = selectedStorageName.ifEmpty { "No file chosen" },
                                             fontSize = 13.sp,
-                                            color = if (selectedStorageUri != null) Color.Black else Color.Gray,
+                                            color = if (selectedStorageUri != null) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                                             maxLines = 1,
                                             modifier = Modifier.weight(1f)
                                         )
@@ -1755,7 +1801,7 @@ fun AdvancedAdminScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { rstatsStoredExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -1767,7 +1813,7 @@ fun AdvancedAdminScreen(
                                                 "2" -> "Yes, periodically"
                                                 else -> "Yes, on shutdown"
                                             }
-                                            Text(desc, color = Color.Black, fontSize = 14.sp)
+                                            Text(desc, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = rstatsStoredExpanded, onDismissRequest = { rstatsStoredExpanded = false }) {
@@ -1782,7 +1828,7 @@ fun AdvancedAdminScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { stimeStoredExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -1793,7 +1839,7 @@ fun AdvancedAdminScreen(
                                                 "1" -> "Yes, on shutdown & periodically"
                                                 else -> "Yes, on shutdown & periodically"
                                             }
-                                            Text(desc, color = Color.Black, fontSize = 14.sp)
+                                            Text(desc, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = stimeStoredExpanded, onDismissRequest = { stimeStoredExpanded = false }) {
@@ -1828,8 +1874,8 @@ fun AdvancedAdminScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -1841,14 +1887,14 @@ fun AdvancedAdminScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { wpsShortExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             val desc = getWpsShortButtonDesc(uiState.config.btnWpsShort)
-                                            Text(desc, color = Color.Black, fontSize = 14.sp)
+                                            Text(desc, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         val shortOptions = listOf("0", "1", "2", "3", "4", "11", "12", "13", "5", "21", "22", "10", "6", "7", "8", "9")
@@ -1867,14 +1913,14 @@ fun AdvancedAdminScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { wpsLongExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             val desc = getWpsLongButtonDesc(uiState.config.btnWpsLong)
-                                            Text(desc, color = Color.Black, fontSize = 14.sp)
+                                            Text(desc, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         val longOptions = listOf("0", "1", "2", "3", "12", "13", "14", "4", "21", "22", "11", "5", "6", "9", "7", "8", "10", "15")
@@ -1894,8 +1940,8 @@ fun AdvancedAdminScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -1909,7 +1955,7 @@ fun AdvancedAdminScreen(
                                     ) {
                                         Column {
                                             Text("Enable Front LED?", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Global switch for all status lights", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Global switch for all status lights", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.ledEnable,
@@ -1925,7 +1971,7 @@ fun AdvancedAdminScreen(
                                             Row(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                     .clickable { ledInternetExpanded = true }
                                                     .padding(14.dp),
                                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1938,7 +1984,7 @@ fun AdvancedAdminScreen(
                                                     "3" -> "Internet detected"
                                                     else -> "Disable"
                                                 }
-                                                Text(desc, color = Color.Black, fontSize = 14.sp)
+                                                Text(desc, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                                 Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                             }
                                             DropdownMenu(expanded = ledInternetExpanded, onDismissRequest = { ledInternetExpanded = false }) {
@@ -1955,7 +2001,7 @@ fun AdvancedAdminScreen(
                                             Row(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                     .clickable { ledUsbExpanded = true }
                                                     .padding(14.dp),
                                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1968,7 +2014,7 @@ fun AdvancedAdminScreen(
                                                     "3" -> "USB mount Volume, activity"
                                                     else -> "Disable"
                                                 }
-                                                Text(desc, color = Color.Black, fontSize = 14.sp)
+                                                Text(desc, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                                 Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                             }
                                             DropdownMenu(expanded = ledUsbExpanded, onDismissRequest = { ledUsbExpanded = false }) {
@@ -1985,7 +2031,7 @@ fun AdvancedAdminScreen(
                                             Row(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                     .clickable { ledWifiExpanded = true }
                                                     .padding(14.dp),
                                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1996,7 +2042,7 @@ fun AdvancedAdminScreen(
                                                     "1" -> "Wireless radio ON, activity (*)"
                                                     else -> "Disable"
                                                 }
-                                                Text(desc, color = Color.Black, fontSize = 14.sp)
+                                                Text(desc, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                                 Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                             }
                                             DropdownMenu(expanded = ledWifiExpanded, onDismissRequest = { ledWifiExpanded = false }) {
@@ -2011,7 +2057,7 @@ fun AdvancedAdminScreen(
                                             Row(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                     .clickable { ledPowerExpanded = true }
                                                     .padding(14.dp),
                                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -2022,7 +2068,7 @@ fun AdvancedAdminScreen(
                                                     "1" -> "Enable, buttons events (*)"
                                                     else -> "Disable, buttons events"
                                                 }
-                                                Text(desc, color = Color.Black, fontSize = 14.sp)
+                                                Text(desc, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                                 Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                             }
                                             DropdownMenu(expanded = ledPowerExpanded, onDismissRequest = { ledPowerExpanded = false }) {
@@ -2037,7 +2083,7 @@ fun AdvancedAdminScreen(
                                             Row(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                     .clickable { ledEthernetExpanded = true }
                                                     .padding(14.dp),
                                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -2050,7 +2096,7 @@ fun AdvancedAdminScreen(
                                                     "3" -> "Ethernet link LAN/WAN"
                                                     else -> "Disable"
                                                 }
-                                                Text(desc, color = Color.Black, fontSize = 14.sp)
+                                                Text(desc, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                                 Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                             }
                                             DropdownMenu(expanded = ledEthernetExpanded, onDismissRequest = { ledEthernetExpanded = false }) {
@@ -2106,7 +2152,7 @@ fun AdvancedAdminScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showResetDialog = false }) {
-                    Text("Cancel", color = Color.Gray)
+                    Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         )
@@ -2124,7 +2170,7 @@ fun AdvancedAdminScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showStorageResetDialog = false }) {
-                    Text("Cancel", color = Color.Gray)
+                    Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         )

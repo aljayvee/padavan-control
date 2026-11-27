@@ -63,6 +63,21 @@ class RouterDiscoveryServiceTest {
     }
 
     @Test
+    fun testLocalSubnetIps_whenNotOnWifi_returnsEmpty() {
+        val context = mock(Context::class.java)
+        val connectivityManager = mock(ConnectivityManager::class.java)
+        val activeNetwork = mock(Network::class.java)
+        val capabilities = mock(NetworkCapabilities::class.java)
+
+        `when`(context.getSystemService(Context.CONNECTIVITY_SERVICE)).thenReturn(connectivityManager)
+        `when`(connectivityManager.activeNetwork).thenReturn(activeNetwork)
+        `when`(connectivityManager.getNetworkCapabilities(activeNetwork)).thenReturn(capabilities)
+        `when`(capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)).thenReturn(false)
+
+        assertTrue(RouterDiscoveryService.localSubnetIps(context).isEmpty())
+    }
+
+    @Test
     fun testGetWifiGatewayIp_whenOnWifi_returnsCorrectIp() {
         val context = mock(Context::class.java)
         val appContext = mock(Context::class.java)

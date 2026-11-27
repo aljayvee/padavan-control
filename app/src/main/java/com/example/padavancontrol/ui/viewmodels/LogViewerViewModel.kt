@@ -35,10 +35,6 @@ class LogViewerViewModel(
 
     private var allLogLines: List<String> = listOf("Fetching syslog messages from router...")
 
-    init {
-        fetchLogs()
-    }
-
     fun updateFilterQuery(value: String) {
         _uiState.update { it.copy(filterQuery = value) }
         applyFilter()

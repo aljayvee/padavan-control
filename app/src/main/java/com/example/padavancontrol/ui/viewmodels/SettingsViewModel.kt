@@ -14,6 +14,8 @@ import kotlinx.coroutines.launch
 
 data class SettingsUiState(
     val routerIp: String = "",
+    val routerName: String = "",
+    val hardwareModel: String = "",
     val rememberMe: Boolean = false,
     val useBiometric: Boolean = false,
     val monitoringEnabled: Boolean = false,
@@ -38,40 +40,44 @@ class SettingsViewModel(
         _uiState.update {
             it.copy(
                 routerIp = credentialStore.getRouterIp(),
+                routerName = credentialStore.getRouterName(),
+                hardwareModel = credentialStore.getHardwareModel(),
                 rememberMe = credentialStore.isRememberCredentials(),
                 useBiometric = credentialStore.isUseBiometric()
             )
         }
 
         viewModelScope.launch {
-            settingsDataStore.isMonitoringEnabled().collect { value ->
-                _uiState.update { it.copy(monitoringEnabled = value) }
+            settingsDataStore.getMonitoringPreferences().collect { prefs ->
+                _uiState.update {
+                    it.copy(
+                        monitoringEnabled = prefs.monitoringEnabled,
+                        monitorIntervalMinutes = prefs.monitorIntervalMinutes,
+                        notifyWanDisconnect = prefs.notifyWanDisconnect,
+                        notifyNewDevice = prefs.notifyNewDevice,
+                        notifyHighTemp = prefs.notifyHighTemp,
+                        highTempThreshold = prefs.highTempThreshold
+                    )
+                }
             }
         }
-        viewModelScope.launch {
-            settingsDataStore.getMonitorIntervalMinutes().collect { value ->
-                _uiState.update { it.copy(monitorIntervalMinutes = value) }
-            }
-        }
-        viewModelScope.launch {
-            settingsDataStore.isNotifyWanDisconnect().collect { value ->
-                _uiState.update { it.copy(notifyWanDisconnect = value) }
-            }
-        }
-        viewModelScope.launch {
-            settingsDataStore.isNotifyNewDevice().collect { value ->
-                _uiState.update { it.copy(notifyNewDevice = value) }
-            }
-        }
-        viewModelScope.launch {
-            settingsDataStore.isNotifyHighTemp().collect { value ->
-                _uiState.update { it.copy(notifyHighTemp = value) }
-            }
-        }
-        viewModelScope.launch {
-            settingsDataStore.getHighTempThreshold().collect { value ->
-                _uiState.update { it.copy(highTempThreshold = value) }
-            }
+    }
+
+    /**
+     * The settings view model is created before login, so its initial router
+     * address may still be the old/default one. Refresh it when the screen is
+     * opened so Connection Details always reflects the router that was just
+     * discovered and saved.
+     */
+    fun refreshConnectionInfo() {
+        _uiState.update {
+            it.copy(
+                routerIp = credentialStore.getRouterIp(),
+                routerName = credentialStore.getRouterName(),
+                hardwareModel = credentialStore.getHardwareModel(),
+                rememberMe = credentialStore.isRememberCredentials(),
+                useBiometric = credentialStore.isUseBiometric()
+            )
         }
     }
 
@@ -145,7 +151,6 @@ class SettingsViewModel(
     }
 
     override fun onCleared() {
-        super.onCleared()
         // If there's a pending debounced IP save, persist it immediately
         val currentIp = _uiState.value.routerIp
         if (ipSaveJob?.isActive == true) {

@@ -42,7 +42,11 @@ class DashboardViewModelTest {
         Dispatchers.setMain(testDispatcher)
 
         whenever(credentialStore.getRouterIp()).thenReturn("192.168.2.2")
+        whenever(credentialStore.getRouterName()).thenReturn("")
         whenever(credentialStore.getHardwareModel()).thenReturn("NEWIFI3")
+        kotlinx.coroutines.runBlocking {
+            whenever(repository.refreshRouterIdentity()).thenReturn(true)
+        }
         whenever(repository.getSystemStatus()).thenReturn(flowOf(Result.success(
             SystemStatus(cpuUsage = 15, cpuTemp = 45f, wifiTemp = 40f, ramUsed = 50 * 1024 * 1024, ramTotal = 128 * 1024 * 1024, uptime = 3600L)
         )))
@@ -64,6 +68,7 @@ class DashboardViewModelTest {
     fun testInitialStateAndPolling() = runTest(testDispatcher) {
         val vm = DashboardViewModel(repository, credentialStore)
         viewModel = vm
+        vm.setPollingEnabled(true)
 
         // Let the polling execute once
         testDispatcher.scheduler.runCurrent()
@@ -75,6 +80,29 @@ class DashboardViewModelTest {
         assertEquals(15, state.systemStatus?.cpuUsage)
         assertEquals(1, state.lanLinks.size)
         assertEquals("LAN1", state.lanLinks[0].name)
+
+        vm.onCleared()
+    }
+
+    @Test
+    fun testRefreshConnectionInfo_picksUpNewlyDiscoveredRouter() = runTest(testDispatcher) {
+        val vm = DashboardViewModel(repository, credentialStore)
+        viewModel = vm
+        testDispatcher.scheduler.runCurrent()
+
+        assertEquals("192.168.2.2", vm.uiState.value.routerIp)
+        assertEquals("", vm.uiState.value.routerName)
+
+        // Simulate the login flow saving a router found during discovery
+        whenever(credentialStore.getRouterIp()).thenReturn("192.168.31.10")
+        whenever(credentialStore.getRouterName()).thenReturn("RM-AC2100")
+        whenever(credentialStore.getHardwareModel()).thenReturn("RM-AC2100")
+
+        vm.refreshConnectionInfo()
+
+        assertEquals("192.168.31.10", vm.uiState.value.routerIp)
+        assertEquals("RM-AC2100", vm.uiState.value.routerName)
+        assertEquals("RM-AC2100", vm.uiState.value.hardwareModel)
 
         vm.onCleared()
     }

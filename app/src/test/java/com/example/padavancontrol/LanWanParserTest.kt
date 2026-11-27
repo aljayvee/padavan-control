@@ -173,6 +173,45 @@ class LanWanParserTest : ParserTestBase() {
     }
 
     @Test
+    fun testParseLanLinks_derivesPortCountFromFirmware() {
+        val fourPortResponse = getMockHtml("""
+            function ether_link_status(idx){
+             if(idx==0) return '1000M';
+             if(idx==1) return 'No link';
+             if(idx==2) return '100M';
+             if(idx==3) return '1000M';
+             return 'No link';
+            }
+        """.trimIndent())
+
+        val fourPorts = PadavanResponseParser.parseLanLinks(fourPortResponse)
+        assertEquals(4, fourPorts.size)
+        assertEquals("WAN", fourPorts[0].name)
+        assertEquals("LAN 1", fourPorts[1].name)
+        assertEquals("LAN 2", fourPorts[2].name)
+        assertEquals("LAN 3", fourPorts[3].name)
+        assertTrue(fourPorts[0].isConnected)
+        assertFalse(fourPorts[1].isConnected)
+        assertEquals("100M", fourPorts[2].speed)
+
+        val fivePortResponse = getMockHtml("""
+            function ether_link_status(idx){
+             if(idx==0) return '1000M';
+             if(idx==1) return '1000M';
+             if(idx==2) return '1000M';
+             if(idx==3) return '1000M';
+             if(idx==4) return '1000M';
+             return 'No link';
+            }
+        """.trimIndent())
+
+        val fivePorts = PadavanResponseParser.parseLanLinks(fivePortResponse)
+        assertEquals(5, fivePorts.size)
+        assertEquals("LAN 4", fivePorts[4].name)
+        assertTrue(fivePorts.all { it.isConnected })
+    }
+
+    @Test
     fun testParseWanConfig() {
         val mockHtml = getMockHtml("""
             <input type="hidden" name="wan_proto" value="pppoe">

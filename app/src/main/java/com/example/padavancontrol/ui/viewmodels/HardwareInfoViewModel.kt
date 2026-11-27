@@ -28,17 +28,27 @@ class HardwareInfoViewModel(
     val uiState: StateFlow<HardwareInfoUiState> = _uiState.asStateFlow()
 
     private var pollingJob: Job? = null
+    private var isPollingActive = false
+    private val pollingBackoff = PollingBackoff(baseDelayMs = 3000L)
 
-    init {
-        startPolling()
+    fun setPollingEnabled(enabled: Boolean) {
+        if (enabled == isPollingActive) return
+        isPollingActive = enabled
+        if (enabled) {
+            startPolling()
+        } else {
+            pollingJob?.cancel()
+        }
     }
 
     fun startPolling() {
         pollingJob?.cancel()
         pollingJob = viewModelScope.launch {
             while (isActive) {
+                var success = false
                 repository.getHardwareInfo().collect { result ->
                     result.onSuccess { data ->
+                        success = true
                         _uiState.update {
                             it.copy(hardwareInfo = data, isLoading = false, errorMessage = null)
                         }
@@ -52,7 +62,8 @@ class HardwareInfoViewModel(
                         }
                     }
                 }
-                delay(3000)
+                if (success) pollingBackoff.onSuccess() else pollingBackoff.onFailure()
+                delay(pollingBackoff.nextDelayMs())
             }
         }
     }
@@ -63,7 +74,6 @@ class HardwareInfoViewModel(
     }
 
     public override fun onCleared() {
-        super.onCleared()
         pollingJob?.cancel()
     }
 }

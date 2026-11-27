@@ -67,6 +67,10 @@ fun LogViewerScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val lazyListState = rememberLazyListState()
 
+    LaunchedEffect(Unit) {
+        viewModel.fetchLogs()
+    }
+
     // Automatically scroll to the end of the logs when log line count changes
     val filteredLinesCount = uiState.filteredLogLines.size
     LaunchedEffect(filteredLinesCount) {

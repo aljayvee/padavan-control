@@ -67,6 +67,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -154,7 +155,7 @@ fun AdvancedWirelessScreen(
         staWpaPskError = null
 
         val config = uiState.config
-        if (section == "General" || section == "Professional") {
+        if (section == "General" && config.isEnabled) {
             if (config.ssid.isBlank()) {
                 ssidError = t("SSID name cannot be blank.")
                 isValid = false
@@ -162,6 +163,14 @@ fun AdvancedWirelessScreen(
             if (config.authMode.contains("psk") && (config.wpaPsk.length < 8 || config.wpaPsk.length > 64)) {
                 wpaPskError = t("WPA password must be between 8 and 64 characters.")
                 isValid = false
+            }
+            if (!config.radioDate.contains('1')) {
+                Toast.makeText(context, t("Please select at least one day to enable the radio."), Toast.LENGTH_SHORT).show()
+                return false
+            }
+            if (!isValidScheduleTimeRange(config.radioTimeWorkweek) || !isValidScheduleTimeRange(config.radioTimeWeekend)) {
+                Toast.makeText(context, t("Start time and end time cannot be identical."), Toast.LENGTH_SHORT).show()
+                return false
             }
         }
 
@@ -173,6 +182,14 @@ fun AdvancedWirelessScreen(
             if (config.guestAuthMode.contains("psk") && (config.guestWpaPsk.length < 8 || config.guestWpaPsk.length > 64)) {
                 guestWpaPskError = t("Guest WPA password must be between 8 and 64 characters.")
                 isValid = false
+            }
+            if (!config.guestDate.contains('1')) {
+                Toast.makeText(context, t("Please select at least one day to enable the guest AP."), Toast.LENGTH_SHORT).show()
+                return false
+            }
+            if (!isValidScheduleTimeRange(config.guestTimeWorkweek) || !isValidScheduleTimeRange(config.guestTimeWeekend)) {
+                Toast.makeText(context, t("Start time and end time cannot be identical."), Toast.LENGTH_SHORT).show()
+                return false
             }
         }
 
@@ -398,7 +415,7 @@ fun AdvancedWirelessScreen(
                     LinearProgressIndicator(
                         progress = { animatedProgress },
                         color = ArcherTeal,
-                        trackColor = Color(0xFFE0F2F1),
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(8.dp)
@@ -414,7 +431,7 @@ fun AdvancedWirelessScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = uiState.loadStatus.ifEmpty { t("Fetching Wireless configuration...") },
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 14.sp,
                         textAlign = TextAlign.Center
                     )
@@ -546,13 +563,25 @@ fun GlassHeaderCard(is5GHz: Boolean, section: String) {
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = t("Configuring Newifi D2 hardware interface parameters directly."),
+                    text = t("Configuring Padavan hardware interface parameters directly."),
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
     }
+}
+
+private fun isValidScheduleTimeRange(timeStr: String): Boolean {
+    if (timeStr.length != 8 || !timeStr.all { it.isDigit() }) return false
+    val sh = timeStr.substring(0, 2).toIntOrNull() ?: return false
+    val sm = timeStr.substring(2, 4).toIntOrNull() ?: return false
+    val eh = timeStr.substring(4, 6).toIntOrNull() ?: return false
+    val em = timeStr.substring(6, 8).toIntOrNull() ?: return false
+    if (sh !in 0..23 || eh !in 0..23 || sm !in 0..59 || em !in 0..59) return false
+    // Padavan's validForm() rejects start == end because timecheck_wifi treats
+    // start >= end as an overnight range that stays on 24 hours.
+    return !(sh == eh && sm == em)
 }
 
 @Composable
@@ -577,9 +606,12 @@ fun DaySelectionRow(
                         .clip(RoundedCornerShape(8.dp))
                         .background(if (isChecked) ArcherTeal else MaterialTheme.colorScheme.surfaceVariant)
                         .clickable {
-                            val chars = dateStr.toCharArray().toMutableList()
-                            while (chars.size <= index) chars.add('0')
-                            chars[index] = if (isChecked) '0' else '1'
+                            val chars = MutableList(7) { i ->
+                                if (dateStr.getOrNull(i) == '1') '1' else '0'
+                            }
+                            if (index in 0..6) {
+                                chars[index] = if (isChecked) '0' else '1'
+                            }
                             onDateChange(chars.joinToString(""))
                         }
                         .padding(vertical = 8.dp),
@@ -603,10 +635,13 @@ fun TimeRangeInput(
     timeStr: String,
     onTimeChange: (String) -> Unit
 ) {
-    val sh = if (timeStr.length >= 2) timeStr.substring(0, 2) else "00"
-    val sm = if (timeStr.length >= 4) timeStr.substring(2, 4) else "00"
-    val eh = if (timeStr.length >= 6) timeStr.substring(4, 6) else "23"
-    val em = if (timeStr.length >= 8) timeStr.substring(6, 8) else "59"
+    // Router stores the range as HHMMHHMM. Fall back to an all-day range when
+    // the value from the router is missing or malformed.
+    val safeTime = if (timeStr.length == 8 && timeStr.all { it.isDigit() }) timeStr else "00002359"
+    val sh = safeTime.substring(0, 2)
+    val sm = safeTime.substring(2, 4)
+    val eh = safeTime.substring(4, 6)
+    val em = safeTime.substring(6, 8)
 
     Column {
         Text(label, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
@@ -615,41 +650,170 @@ fun TimeRangeInput(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            OutlinedTextField(
+            TimePartField(
+                label = "Start Hr",
                 value = sh,
-                onValueChange = { if (it.length <= 2 && it.all { c -> c.isDigit() }) onTimeChange("${it.padStart(2, '0')}$sm$eh$em") },
-                label = { Text("Start Hr") },
+                maxValue = 23,
                 modifier = Modifier.weight(1f),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                onValueChange = { onTimeChange("$it$sm$eh$em") }
             )
-            OutlinedTextField(
+            TimePartField(
+                label = "Start Min",
                 value = sm,
-                onValueChange = { if (it.length <= 2 && it.all { c -> c.isDigit() }) onTimeChange("$sh${it.padStart(2, '0')}$eh$em") },
-                label = { Text("Start Min") },
+                maxValue = 59,
                 modifier = Modifier.weight(1f),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                onValueChange = { onTimeChange("$sh$it$eh$em") }
             )
             Text("-", fontWeight = FontWeight.Bold)
-            OutlinedTextField(
+            TimePartField(
+                label = "End Hr",
                 value = eh,
-                onValueChange = { if (it.length <= 2 && it.all { c -> c.isDigit() }) onTimeChange("$sh$sm${it.padStart(2, '0')}$em") },
-                label = { Text("End Hr") },
+                maxValue = 23,
                 modifier = Modifier.weight(1f),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                onValueChange = { onTimeChange("$sh$sm$it$em") }
             )
-            OutlinedTextField(
+            TimePartField(
+                label = "End Min",
                 value = em,
-                onValueChange = { if (it.length <= 2 && it.all { c -> c.isDigit() }) onTimeChange("$sh$sm$eh${it.padStart(2, '0')}") },
-                label = { Text("End Min") },
+                maxValue = 59,
                 modifier = Modifier.weight(1f),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                onValueChange = { onTimeChange("$sh$sm$eh$it") }
             )
         }
     }
+}
+
+@Composable
+private fun TimePartField(
+    label: String,
+    value: String,
+    maxValue: Int,
+    modifier: Modifier = Modifier,
+    onValueChange: (String) -> Unit
+) {
+    // Keep the raw text locally so partial input ("9", or an empty field while
+    // backspacing) can be typed. Complete, in-range values are committed immediately.
+    var text by remember { mutableStateOf(value) }
+    var isFocused by remember { mutableStateOf(false) }
+
+    LaunchedEffect(value, isFocused) {
+        val currentNormalized = text.toIntOrNull()?.toString()?.padStart(2, '0')
+        if (!isFocused || (text.isNotEmpty() && currentNormalized != value)) {
+            text = value
+        }
+    }
+
+    val parsed = text.toIntOrNull()
+    val isInvalid = text.isNotEmpty() && (parsed == null || parsed > maxValue)
+
+    OutlinedTextField(
+        value = text,
+        onValueChange = { input ->
+            val digits = input.filter { it.isDigit() }.take(2)
+            text = digits
+            if (digits.isEmpty()) {
+                onValueChange("00")
+            } else {
+                val number = digits.toIntOrNull()
+                if (number != null && number <= maxValue) {
+                    onValueChange(number.toString().padStart(2, '0'))
+                }
+            }
+        },
+        label = { Text(label) },
+        modifier = modifier.onFocusChanged { focusState ->
+            isFocused = focusState.isFocused
+            if (!focusState.isFocused) {
+                val number = text.toIntOrNull()
+                val normalized = if (number != null && number <= maxValue) {
+                    number.toString().padStart(2, '0')
+                } else {
+                    value
+                }
+                text = normalized
+                if (normalized != value) {
+                    onValueChange(normalized)
+                }
+            }
+        },
+        singleLine = true,
+        isError = isInvalid,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+    )
+}
+
+@Composable
+private fun NumericSettingField(
+    label: String,
+    value: Int,
+    range: IntRange,
+    defaultValue: Int,
+    modifier: Modifier = Modifier,
+    blankWhenZero: Boolean = false,
+    supportingText: String? = null,
+    onValueChange: (Int) -> Unit
+) {
+    fun formatValue(v: Int): String = if (blankWhenZero && v == 0) "" else v.toString()
+
+    var text by remember { mutableStateOf(formatValue(value)) }
+    var isFocused by remember { mutableStateOf(false) }
+
+    LaunchedEffect(value, isFocused) {
+        val currentParsed = if (blankWhenZero && text.isEmpty()) 0 else text.toIntOrNull()
+        if (!isFocused || currentParsed != value) {
+            if (!isFocused || (text != "-" && currentParsed != null)) {
+                text = formatValue(value)
+            }
+        }
+    }
+
+    val allowNegative = range.first < 0
+    val parsed = text.toIntOrNull()
+    val isInvalid = text.isNotEmpty() && text != "-" && (parsed == null || parsed !in range)
+
+    OutlinedTextField(
+        value = text,
+        onValueChange = { input ->
+            val cleaned = buildString {
+                for (ch in input) {
+                    if (ch.isDigit()) {
+                        append(ch)
+                    } else if (ch == '-' && allowNegative && isEmpty()) {
+                        append(ch)
+                    }
+                }
+            }
+            text = cleaned
+            if (cleaned.isEmpty() && blankWhenZero) {
+                onValueChange(0)
+            } else {
+                val num = cleaned.toIntOrNull()
+                if (num != null && num in range) {
+                    onValueChange(num)
+                }
+            }
+        },
+        label = { Text(label) },
+        supportingText = supportingText?.let { { Text(it, fontSize = 11.sp) } },
+        modifier = modifier.onFocusChanged { focusState ->
+            isFocused = focusState.isFocused
+            if (!focusState.isFocused) {
+                val num = if (blankWhenZero && text.isEmpty()) 0 else text.toIntOrNull()
+                val resolved = when {
+                    num != null && num in range -> num
+                    value in range -> value
+                    else -> defaultValue
+                }
+                text = formatValue(resolved)
+                if (resolved != value) {
+                    onValueChange(resolved)
+                }
+            }
+        },
+        singleLine = true,
+        isError = isInvalid,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+    )
 }
 
 @Composable
@@ -850,13 +1014,14 @@ fun GeneralSettingsForm(
                     )
 
                     // Network Key Rotation
-                    OutlinedTextField(
-                        value = config.wpaGtkRekey.toString(),
-                        onValueChange = { onConfigChange(config.copy(wpaGtkRekey = it.toIntOrNull() ?: 3600)) },
-                        label = { Text("Network Key Rotation Interval (sec)") },
+                    NumericSettingField(
+                        label = "Network Key Rotation Interval (sec)",
+                        value = config.wpaGtkRekey,
+                        range = 0..2592000,
+                        defaultValue = 3600,
+                        supportingText = "Range: 0..2592000. Default: 3600",
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                        onValueChange = { onConfigChange(config.copy(wpaGtkRekey = it)) }
                     )
                 }
 
@@ -901,63 +1066,56 @@ fun GeneralSettingsForm(
                 )
 
                 // Low RSSI Kick
-                OutlinedTextField(
-                    value = if (config.kickStaRssiLow == 0) "" else config.kickStaRssiLow.toString(),
-                    onValueChange = {
-                        val value = it.toIntOrNull() ?: 0
-                        if (value in -100..0) {
-                            onConfigChange(config.copy(kickStaRssiLow = value))
-                        }
-                    },
-                    label = { Text("Low RSSI Roaming Kick threshold (dBm)") },
-                    supportingText = { Text("Range: -100 to 0. 0 = Disabled. Auto kicks low signal clients.", fontSize = 11.sp) },
+                NumericSettingField(
+                    label = "Low RSSI Roaming Kick threshold (dBm)",
+                    value = config.kickStaRssiLow,
+                    range = -100..0,
+                    defaultValue = 0,
+                    blankWhenZero = true,
+                    supportingText = "Range: -100 to 0. 0 = Disabled. Auto kicks low signal clients.",
                     modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true
+                    onValueChange = { onConfigChange(config.copy(kickStaRssiLow = it)) }
                 )
 
                 // Assoc Req RSSI
-                OutlinedTextField(
-                    value = if (config.assocReqRssiThres == 0) "" else config.assocReqRssiThres.toString(),
-                    onValueChange = {
-                        val value = it.toIntOrNull() ?: 0
-                        if (value in -100..0) {
-                            onConfigChange(config.copy(assocReqRssiThres = value))
-                        }
-                    },
-                    label = { Text("Association Req RSSI threshold (dBm)") },
-                    supportingText = { Text("Range: -100 to 0. 0 = Disabled. Rejects connections under threshold.", fontSize = 11.sp) },
+                NumericSettingField(
+                    label = "Association Req RSSI threshold (dBm)",
+                    value = config.assocReqRssiThres,
+                    range = -100..0,
+                    defaultValue = 0,
+                    blankWhenZero = true,
+                    supportingText = "Range: -100 to 0. 0 = Disabled. Rejects connections under threshold.",
                     modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true
-                )
-
-                // Radio schedules layout
-                Text("Radio Schedule", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = ArcherTeal)
-                
-                DaySelectionRow(
-                    label = "Date to Enable Radio (workweek):",
-                    daysList = listOf("Mo" to 1, "Tu" to 2, "We" to 3, "Th" to 4, "Fr" to 5),
-                    dateStr = config.radioDate,
-                    onDateChange = { onConfigChange(config.copy(radioDate = it)) }
-                )
-                TimeRangeInput(
-                    label = "Time of Day to Enable Radio (workweek):",
-                    timeStr = config.radioTimeWorkweek,
-                    onTimeChange = { onConfigChange(config.copy(radioTimeWorkweek = it)) }
-                )
-                DaySelectionRow(
-                    label = "Date to Enable Radio (weekend):",
-                    daysList = listOf("Sa" to 6, "Su" to 0),
-                    dateStr = config.radioDate,
-                    onDateChange = { onConfigChange(config.copy(radioDate = it)) }
-                )
-                TimeRangeInput(
-                    label = "Time of Day to Enable Radio (weekend):",
-                    timeStr = config.radioTimeWeekend,
-                    onTimeChange = { onConfigChange(config.copy(radioTimeWeekend = it)) }
+                    onValueChange = { onConfigChange(config.copy(assocReqRssiThres = it)) }
                 )
             }
+
+            // Radio schedules are independent of the current radio state, just
+            // like on the router, so they remain editable while the radio is off.
+            Text("Radio Schedule", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = ArcherTeal)
+
+            DaySelectionRow(
+                label = "Date to Enable Radio (workweek):",
+                daysList = listOf("Mo" to 1, "Tu" to 2, "We" to 3, "Th" to 4, "Fr" to 5),
+                dateStr = config.radioDate,
+                onDateChange = { onConfigChange(config.copy(radioDate = it)) }
+            )
+            TimeRangeInput(
+                label = "Time of Day to Enable Radio (workweek):",
+                timeStr = config.radioTimeWorkweek,
+                onTimeChange = { onConfigChange(config.copy(radioTimeWorkweek = it)) }
+            )
+            DaySelectionRow(
+                label = "Date to Enable Radio (weekend):",
+                daysList = listOf("Sa" to 6, "Su" to 0),
+                dateStr = config.radioDate,
+                onDateChange = { onConfigChange(config.copy(radioDate = it)) }
+            )
+            TimeRangeInput(
+                label = "Time of Day to Enable Radio (weekend):",
+                timeStr = config.radioTimeWeekend,
+                onTimeChange = { onConfigChange(config.copy(radioTimeWeekend = it)) }
+            )
         }
     }
 }
@@ -1458,71 +1616,47 @@ fun ProfessionalSettingsForm(
             )
 
             // Fragmentation Threshold
-            OutlinedTextField(
-                value = config.fragThresh.toString(),
-                onValueChange = {
-                    it.toIntOrNull()?.let { valVal ->
-                        if (valVal in 256..2346) {
-                            onConfigChange(config.copy(fragThresh = valVal))
-                        }
-                    }
-                },
-                label = { Text("Fragmentation Threshold") },
-                supportingText = { Text("Range: 256..2346. Default: 2346", fontSize = 11.sp) },
+            NumericSettingField(
+                label = "Fragmentation Threshold",
+                value = config.fragThresh,
+                range = 256..2346,
+                defaultValue = 2346,
+                supportingText = "Range: 256..2346. Default: 2346",
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true
+                onValueChange = { onConfigChange(config.copy(fragThresh = it)) }
             )
 
             // RTS Threshold
-            OutlinedTextField(
-                value = config.rtsThresh.toString(),
-                onValueChange = {
-                    it.toIntOrNull()?.let { valVal ->
-                        if (valVal in 1..2347) {
-                            onConfigChange(config.copy(rtsThresh = valVal))
-                        }
-                    }
-                },
-                label = { Text("RTS Threshold") },
-                supportingText = { Text("Range: 1..2347. Default: 2347", fontSize = 11.sp) },
+            NumericSettingField(
+                label = "RTS Threshold",
+                value = config.rtsThresh,
+                range = 1..2347,
+                defaultValue = 2347,
+                supportingText = "Range: 1..2347. Default: 2347",
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true
+                onValueChange = { onConfigChange(config.copy(rtsThresh = it)) }
             )
 
             // DTIM Interval
-            OutlinedTextField(
-                value = config.dtimInterval.toString(),
-                onValueChange = {
-                    it.toIntOrNull()?.let { valVal ->
-                        if (valVal in 1..255) {
-                            onConfigChange(config.copy(dtimInterval = valVal))
-                        }
-                    }
-                },
-                label = { Text("DTIM Interval") },
-                supportingText = { Text("Range: 1..255. Default: 1", fontSize = 11.sp) },
+            NumericSettingField(
+                label = "DTIM Interval",
+                value = config.dtimInterval,
+                range = 1..255,
+                defaultValue = 1,
+                supportingText = "Range: 1..255. Default: 1",
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true
+                onValueChange = { onConfigChange(config.copy(dtimInterval = it)) }
             )
 
             // Beacon Interval
-            OutlinedTextField(
-                value = config.bcnInterval.toString(),
-                onValueChange = {
-                    it.toIntOrNull()?.let { valVal ->
-                        if (valVal in 20..1000) {
-                            onConfigChange(config.copy(bcnInterval = valVal))
-                        }
-                    }
-                },
-                label = { Text("Beacon Interval") },
-                supportingText = { Text("Range: 20..1000. Default: 100", fontSize = 11.sp) },
+            NumericSettingField(
+                label = "Beacon Interval",
+                value = config.bcnInterval,
+                range = 20..1000,
+                defaultValue = 100,
+                supportingText = "Range: 20..1000. Default: 100",
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true
+                onValueChange = { onConfigChange(config.copy(bcnInterval = it)) }
             )
 
             // Enable TX Bursting?
@@ -1685,35 +1819,27 @@ fun ProfessionalSettingsForm(
             )
 
             // Low RSSI Kick in Professional Settings
-            OutlinedTextField(
-                value = if (config.kickStaRssiLow == 0) "" else config.kickStaRssiLow.toString(),
-                onValueChange = {
-                    val value = it.toIntOrNull() ?: 0
-                    if (value in -100..0) {
-                        onConfigChange(config.copy(kickStaRssiLow = value))
-                    }
-                },
-                label = { Text("Low RSSI Roaming Kick threshold (dBm)") },
-                supportingText = { Text("Range: -100 to 0. 0 = Disabled. Auto kicks low signal clients.", fontSize = 11.sp) },
+            NumericSettingField(
+                label = "Low RSSI Roaming Kick threshold (dBm)",
+                value = config.kickStaRssiLow,
+                range = -100..0,
+                defaultValue = 0,
+                blankWhenZero = true,
+                supportingText = "Range: -100 to 0. 0 = Disabled. Auto kicks low signal clients.",
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true
+                onValueChange = { onConfigChange(config.copy(kickStaRssiLow = it)) }
             )
 
             // Assoc Req RSSI in Professional Settings
-            OutlinedTextField(
-                value = if (config.assocReqRssiThres == 0) "" else config.assocReqRssiThres.toString(),
-                onValueChange = {
-                    val value = it.toIntOrNull() ?: 0
-                    if (value in -100..0) {
-                        onConfigChange(config.copy(assocReqRssiThres = value))
-                    }
-                },
-                label = { Text("Association Req RSSI threshold (dBm)") },
-                supportingText = { Text("Range: -100 to 0. 0 = Disabled. Rejects connections under threshold.", fontSize = 11.sp) },
+            NumericSettingField(
+                label = "Association Req RSSI threshold (dBm)",
+                value = config.assocReqRssiThres,
+                range = -100..0,
+                defaultValue = 0,
+                blankWhenZero = true,
+                supportingText = "Range: -100 to 0. 0 = Disabled. Rejects connections under threshold.",
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true
+                onValueChange = { onConfigChange(config.copy(assocReqRssiThres = it)) }
             )
         }
     }
@@ -1743,15 +1869,13 @@ fun RadiusSettingsForm(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
 
-            OutlinedTextField(
-                value = config.radiusPort.toString(),
-                onValueChange = { 
-                    val port = it.toIntOrNull() ?: 1812
-                    onConfigChange(config.copy(radiusPort = port)) 
-                },
-                label = { Text("Server Port (Default: 1812)") },
+            NumericSettingField(
+                label = "Server Port (Default: 1812)",
+                value = config.radiusPort,
+                range = 1..65535,
+                defaultValue = 1812,
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                onValueChange = { onConfigChange(config.copy(radiusPort = it)) }
             )
 
             OutlinedTextField(

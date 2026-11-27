@@ -26,15 +26,17 @@ class DashboardScreenTest {
     @get:Rule
     val composeTestRule = createComposeRule()
 
-    @Test
-    fun testDashboardDisplayAndInteraction() {
+    private fun renderDashboard(
+        wanUptime: Long,
+        systemUptime: Long
+    ): DashboardViewModel {
         val viewModel = mock(DashboardViewModel::class.java)
 
         val systemStatus = SystemStatus(
             cpuUsage = 12,
             ramTotal = 512 * 1024 * 1024L,
             ramUsed = 230 * 1024 * 1024L,
-            uptime = 187200L,
+            uptime = systemUptime,
             cpuTemp = 52f
         )
         val wanStatus = WanStatus(
@@ -44,12 +46,14 @@ class DashboardScreenTest {
             dns1 = "8.8.8.8",
             dns2 = "8.8.4.4",
             connectionType = "PPPoE",
-            uptime = 187200L
+            uptime = wanUptime
         )
 
         val stateFlow = MutableStateFlow(
             DashboardUiState(
                 routerIp = "192.168.2.1",
+                routerName = "RM-AC2100",
+                hardwareModel = "RM-AC2100",
                 systemStatus = systemStatus,
                 wanStatus = wanStatus,
                 lanLinks = emptyList(),
@@ -71,15 +75,35 @@ class DashboardScreenTest {
                 )
             }
         }
+        return viewModel
+    }
+
+    @Test
+    fun testDashboardDisplayAndInteraction() {
+        val viewModel = renderDashboard(wanUptime = 187200L, systemUptime = 187200L)
 
         // Verify elements exist
-        composeTestRule.onNodeWithText("newifi D2").assertExists()
+        composeTestRule.onNodeWithText("RM-AC2100").assertExists()
         composeTestRule.onNodeWithText("192.168.2.1").assertExists()
         composeTestRule.onNodeWithText("Internet Connected").assertExists()
-        composeTestRule.onNodeWithText("IP: 120.24.53.111 • Type: PPPoE").assertExists()
+        composeTestRule.onNodeWithText("Connection Type: PPPoE").assertExists()
+        composeTestRule.onNodeWithText("120.24.53.111").assertExists()
+        composeTestRule.onNodeWithText("120.24.53.1").assertExists()
+        composeTestRule.onNodeWithText("8.8.8.8, 8.8.4.4").assertExists()
+        composeTestRule.onNodeWithText("Uptime").assertExists()
+        composeTestRule.onNodeWithText("2d 4h 0m").assertExists()
 
         // Verify refresh button click
         composeTestRule.onNodeWithContentDescription("Refresh").performClick()
         verify(viewModel).refresh()
+    }
+
+    @Test
+    fun testDashboardUptimeFallsBackToSystemUptimeInApMode() {
+        // Padavan does not populate wan0_uptime in AP mode.
+        renderDashboard(wanUptime = 0L, systemUptime = 90061L)
+
+        composeTestRule.onNodeWithText("Uptime").assertExists()
+        composeTestRule.onNodeWithText("1d 1h 1m").assertExists()
     }
 }

@@ -38,7 +38,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
@@ -59,6 +62,18 @@ fun SettingsScreen(
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val appVersion = remember {
+        try {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName
+        } catch (e: Exception) {
+            null
+        } ?: "unknown"
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.refreshConnectionInfo()
+    }
 
     Scaffold(
         topBar = {
@@ -98,6 +113,24 @@ fun SettingsScreen(
                         fontWeight = FontWeight.Bold,
                         color = ArcherTeal
                     )
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = t("Router Name"),
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = uiState.routerName.ifBlank {
+                            uiState.hardwareModel.takeIf {
+                                it.isNotBlank() && !it.equals("UNKNOWN", ignoreCase = true)
+                            } ?: t("Padavan Router")
+                        },
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
                     Spacer(modifier = Modifier.height(12.dp))
 
                     OutlinedTextField(
@@ -336,7 +369,7 @@ fun SettingsScreen(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    Text("Padavan Control v1.0", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text("Padavan Control v$appVersion", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     Text(
                         "© 2026 Aljayvee V.",
                         fontSize = 12.sp,

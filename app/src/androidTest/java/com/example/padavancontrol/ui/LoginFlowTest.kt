@@ -3,9 +3,11 @@ package com.example.padavancontrol.ui
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.padavancontrol.ui.screens.LoginScreen
+import com.example.padavancontrol.ui.viewmodels.LoginStep
 import com.example.padavancontrol.ui.viewmodels.LoginUiState
 import com.example.padavancontrol.ui.viewmodels.LoginViewModel
 import com.example.padavancontrol.theme.PadavanControlTheme
@@ -32,7 +34,8 @@ class LoginFlowTest {
             LoginUiState(
                 ipAddress = "192.168.2.2",
                 username = "admin",
-                password = "admin_password"
+                password = "admin_password",
+                currentStep = LoginStep.CREDENTIALS
             )
         )
         whenever(viewModel.uiState).thenReturn(stateFlow)
@@ -52,10 +55,10 @@ class LoginFlowTest {
         composeTestRule.onNodeWithText("Router IP Address").assertExists()
         composeTestRule.onNodeWithText("Username").assertExists()
         composeTestRule.onNodeWithText("Password").assertExists()
-        composeTestRule.onNodeWithText("CONNECT & LOGIN").assertExists()
+        composeTestRule.onNodeWithText("CONNECT").assertExists()
 
         // Test clicking login triggers the viewmodel
-        composeTestRule.onNodeWithText("CONNECT & LOGIN").performClick()
+        composeTestRule.onNodeWithText("CONNECT").performScrollTo().performClick()
         verify(viewModel).login()
     }
 }

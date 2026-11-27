@@ -47,6 +47,7 @@ class DevicesViewModelTest {
     fun testInitialStateAndPolling() = runTest(testDispatcher) {
         val vm = DevicesViewModel(repository)
         viewModel = vm
+        vm.setPollingEnabled(true)
 
         // Force polling loop to execute once
         testDispatcher.scheduler.runCurrent()

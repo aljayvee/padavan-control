@@ -79,6 +79,7 @@ import com.example.padavancontrol.data.models.ServiceFilterRule
 import com.example.padavancontrol.data.models.LanClient
 import com.example.padavancontrol.theme.ArcherTeal
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -323,7 +324,7 @@ fun AdvancedFirewallScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     Text("Error loading settings", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(uiState.errorMessage ?: "", color = Color.Gray, fontSize = 14.sp)
+                    Text(uiState.errorMessage ?: "", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(24.dp))
                     Button(
                         onClick = { viewModel.loadConfig(pagePath) },
@@ -343,7 +344,7 @@ fun AdvancedFirewallScreen(
                     LinearProgressIndicator(
                         progress = { animatedProgress },
                         color = ArcherTeal,
-                        trackColor = Color(0xFFE0F2F1),
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(8.dp)
@@ -359,7 +360,7 @@ fun AdvancedFirewallScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = uiState.loadStatus.ifEmpty { "Fetching Firewall configuration..." },
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 14.sp,
                         textAlign = TextAlign.Center
                     )
@@ -377,8 +378,8 @@ fun AdvancedFirewallScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 16.dp)
-                            .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
@@ -394,13 +395,13 @@ fun AdvancedFirewallScreen(
                                     text = "Padavan Netfilter Engine Manager",
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 14.sp,
-                                    color = Color.Black
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "Adjust rules dynamically. Click Apply Settings to persist to router non-volatile flash storage.",
-                                color = Color.Gray,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 12.sp
                             )
                         }
@@ -413,8 +414,8 @@ fun AdvancedFirewallScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -427,7 +428,7 @@ fun AdvancedFirewallScreen(
                                     ) {
                                         Column {
                                             Text("Enable Firewall", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Main firewall mechanism", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Main firewall mechanism", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.fwEnabled,
@@ -443,7 +444,7 @@ fun AdvancedFirewallScreen(
                                     ) {
                                         Column {
                                             Text("DoS Protection", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Mitigate Denial of Service packets", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Mitigate Denial of Service packets", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.fwDosEnabled,
@@ -459,7 +460,7 @@ fun AdvancedFirewallScreen(
                                     ) {
                                         Column {
                                             Text("SYN Cookies", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Block SYN flooding attacks", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Block SYN flooding attacks", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.fwSynCookEnabled,
@@ -474,13 +475,13 @@ fun AdvancedFirewallScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { logModeExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text(uiState.config.fwLogMode.uppercase(), color = Color.Black, fontSize = 14.sp)
+                                            Text(uiState.config.fwLogMode.uppercase(), color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(
@@ -507,7 +508,7 @@ fun AdvancedFirewallScreen(
                                     ) {
                                         Column {
                                             Text("Respond WAN Ping", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Allow ping tests from external WAN", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Allow ping tests from external WAN", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.miscPingEnabled,
@@ -522,8 +523,8 @@ fun AdvancedFirewallScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -537,7 +538,7 @@ fun AdvancedFirewallScreen(
                                     ) {
                                         Column {
                                             Text("Enable Web Access (HTTP)", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Web UI access from outer internet", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Web UI access from outer internet", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.miscHttpEnabled,
@@ -563,7 +564,7 @@ fun AdvancedFirewallScreen(
                                     ) {
                                         Column {
                                             Text("Enable HTTPS Access", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Secure SSL Web administration", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Secure SSL Web administration", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.httpsWopen,
@@ -589,7 +590,7 @@ fun AdvancedFirewallScreen(
                                     ) {
                                         Column {
                                             Text("Enable SSH Server WAN", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Secure CLI shell entry from WAN", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Secure CLI shell entry from WAN", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.sshdWopen,
@@ -611,7 +612,7 @@ fun AdvancedFirewallScreen(
                                             Row(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                     .clickable { sshBfpExpanded = true }
                                                     .padding(12.dp),
                                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -623,7 +624,7 @@ fun AdvancedFirewallScreen(
                                                     "2" -> "Strict block (after 3 failures)"
                                                     else -> "Enabled (Level ${uiState.config.sshdWbfp})"
                                                 }
-                                                Text(desc, color = Color.Black, fontSize = 13.sp)
+                                                Text(desc, color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
                                                 Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                             }
                                             DropdownMenu(expanded = sshBfpExpanded, onDismissRequest = { sshBfpExpanded = false }) {
@@ -642,7 +643,7 @@ fun AdvancedFirewallScreen(
                                     ) {
                                         Column {
                                             Text("Enable FTP Server WAN", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("File transfer external access", color = Color.Gray, fontSize = 12.sp)
+                                            Text("File transfer external access", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.ftpdWopen,
@@ -668,7 +669,7 @@ fun AdvancedFirewallScreen(
                                     ) {
                                         Column {
                                             Text("Enable udpxy WAN Access", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("IPTV UDP-to-HTTP multicast streaming port", color = Color.Gray, fontSize = 12.sp)
+                                            Text("IPTV UDP-to-HTTP multicast streaming port", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.udpxyWopen,
@@ -694,7 +695,7 @@ fun AdvancedFirewallScreen(
                                     ) {
                                         Column {
                                             Text("Open Transmission WAN", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Allows remote Torrent panel management", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Allows remote Torrent panel management", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.trmdRopen,
@@ -710,7 +711,7 @@ fun AdvancedFirewallScreen(
                                     ) {
                                         Column {
                                             Text("Open Aria2 RPC WAN", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Download controller remote command port", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Download controller remote command port", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.ariaRopen,
@@ -727,8 +728,8 @@ fun AdvancedFirewallScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -741,7 +742,7 @@ fun AdvancedFirewallScreen(
                                     ) {
                                         Column {
                                             Text("Enable WAN NAT Engine", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Perform IP translation on outer packets", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Perform IP translation on outer packets", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.wanNatEnabled,
@@ -755,13 +756,13 @@ fun AdvancedFirewallScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { maxConnExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text(uiState.config.nfMaxConn, color = Color.Black, fontSize = 14.sp)
+                                            Text(uiState.config.nfMaxConn, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = maxConnExpanded, onDismissRequest = { maxConnExpanded = false }) {
@@ -777,7 +778,7 @@ fun AdvancedFirewallScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { natTypeExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -789,7 +790,7 @@ fun AdvancedFirewallScreen(
                                                 "2" -> "Hybrid Cone / Symmetric"
                                                 else -> "Hybrid (2)"
                                             }
-                                            Text(desc, color = Color.Black, fontSize = 14.sp)
+                                            Text(desc, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = natTypeExpanded, onDismissRequest = { natTypeExpanded = false }) {
@@ -806,7 +807,7 @@ fun AdvancedFirewallScreen(
                                     ) {
                                         Column {
                                             Text("NAT Loopback (Hairpinning)", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Reach inside servers using external IPs", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Reach inside servers using external IPs", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.nfNatLoopback,
@@ -822,7 +823,7 @@ fun AdvancedFirewallScreen(
                                     ) {
                                         Column {
                                             Text("PPPoE Passthrough", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Allow LAN devices to dial PPPoE directly", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Allow LAN devices to dial PPPoE directly", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.fwPtPppoe,
@@ -837,8 +838,8 @@ fun AdvancedFirewallScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -904,8 +905,8 @@ fun AdvancedFirewallScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -918,7 +919,7 @@ fun AdvancedFirewallScreen(
                                     ) {
                                         Column {
                                             Text("Enable URL Keywords Filter", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Block pages containing matched strings", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Block pages containing matched strings", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.urlFilterEnabled,
@@ -954,7 +955,7 @@ fun AdvancedFirewallScreen(
                                     ) {
                                         Column {
                                             Text("Exclude Filtered Host (Invert Match)", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Inverts rule behavior for the target MAC", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Inverts rule behavior for the target MAC", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.urlFilterInvert,
@@ -970,8 +971,8 @@ fun AdvancedFirewallScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -1006,22 +1007,22 @@ fun AdvancedFirewallScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
                                     Text("Blocked Keywords List", fontWeight = FontWeight.Bold, color = ArcherTeal, modifier = Modifier.padding(bottom = 12.dp))
 
                                     if (uiState.config.urlKeywords.isEmpty()) {
-                                        Text("No keywords restricted yet.", color = Color.Gray, fontSize = 12.sp, modifier = Modifier.padding(vertical = 12.dp))
+                                        Text("No keywords restricted yet.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, modifier = Modifier.padding(vertical = 12.dp))
                                     } else {
                                         uiState.config.urlKeywords.forEachIndexed { index, word ->
                                             Row(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
                                                     .padding(vertical = 4.dp)
-                                                    .background(Color(0xFFFAFAFA), RoundedCornerShape(8.dp))
+                                                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
                                                     .padding(horizontal = 12.dp, vertical = 8.dp),
                                                 horizontalArrangement = Arrangement.SpaceBetween,
                                                 verticalAlignment = Alignment.CenterVertically
@@ -1042,8 +1043,8 @@ fun AdvancedFirewallScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -1054,7 +1055,7 @@ fun AdvancedFirewallScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { macFilterMethodExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -1066,7 +1067,7 @@ fun AdvancedFirewallScreen(
                                                 "2" -> "Reject Association (Blacklist)"
                                                 else -> t("Disabled")
                                             }
-                                            Text(desc, color = Color.Black, fontSize = 14.sp)
+                                            Text(desc, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = macFilterMethodExpanded, onDismissRequest = { macFilterMethodExpanded = false }) {
@@ -1083,7 +1084,7 @@ fun AdvancedFirewallScreen(
                                     ) {
                                         Column {
                                             Text("Drop Untrusted MAC Packets", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Enforce silent drop policies", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Enforce silent drop policies", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.fwMacDrop,
@@ -1099,8 +1100,8 @@ fun AdvancedFirewallScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -1144,8 +1145,8 @@ fun AdvancedFirewallScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(bottom = 16.dp)
-                                        .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Column(modifier = Modifier.padding(16.dp)) {
@@ -1157,7 +1158,7 @@ fun AdvancedFirewallScreen(
                                                     .fillMaxWidth()
                                                     .padding(vertical = 4.dp)
                                                     .clip(RoundedCornerShape(8.dp))
-                                                    .background(Color(0xFFFAFAFA))
+                                                    .background(MaterialTheme.colorScheme.surfaceVariant)
                                                     .clickable { macFilterInputMac = client.macAddress }
                                                     .padding(12.dp),
                                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1166,7 +1167,7 @@ fun AdvancedFirewallScreen(
                                                 Column {
                                                     val host = if (client.hostname.isBlank()) "Unknown Client" else client.hostname
                                                     Text(host, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                                                    Text("IP: ${client.ipAddress} | MAC: ${client.macAddress}", fontSize = 11.sp, color = Color.Gray)
+                                                    Text("IP: ${client.ipAddress} | MAC: ${client.macAddress}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                                 }
                                                 Text("Select 🔗", fontSize = 12.sp, color = ArcherTeal, fontWeight = FontWeight.Bold)
                                             }
@@ -1180,29 +1181,29 @@ fun AdvancedFirewallScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
                                     Text("Current MAC Rules List", fontWeight = FontWeight.Bold, color = ArcherTeal, modifier = Modifier.padding(bottom = 12.dp))
 
                                     if (uiState.config.macFilterRules.isEmpty()) {
-                                        Text("No MAC filters configured yet.", color = Color.Gray, fontSize = 12.sp, modifier = Modifier.padding(vertical = 12.dp))
+                                        Text("No MAC filters configured yet.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, modifier = Modifier.padding(vertical = 12.dp))
                                     } else {
                                         uiState.config.macFilterRules.forEachIndexed { index, rule ->
                                             Row(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
                                                     .padding(vertical = 6.dp)
-                                                    .background(Color(0xFFFAFAFA), RoundedCornerShape(8.dp))
+                                                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
                                                     .padding(12.dp),
                                                 horizontalArrangement = Arrangement.SpaceBetween,
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
                                                 Column {
                                                     Text("MAC: ${rule.mac}", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                                                    Text("Active hours: ${rule.time.take(4)}-${rule.time.drop(4)} | Days: ${rule.date}", fontSize = 11.sp, color = Color.Gray)
+                                                    Text("Active hours: ${rule.time.take(4)}-${rule.time.drop(4)} | Days: ${rule.date}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                                 }
                                                 IconButton(onClick = { deleteMacRule(index) }) {
                                                     Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete", tint = Color.Red)
@@ -1219,8 +1220,8 @@ fun AdvancedFirewallScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -1233,7 +1234,7 @@ fun AdvancedFirewallScreen(
                                     ) {
                                         Column {
                                             Text("Enable Network Services Filter", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Enforce TCP/UDP layer packet checks", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Enforce TCP/UDP layer packet checks", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.fwLwEnabled,
@@ -1247,7 +1248,7 @@ fun AdvancedFirewallScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { serviceFilterDefaultExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -1258,7 +1259,7 @@ fun AdvancedFirewallScreen(
                                                 "DROP" -> "Whitelist (Block all packets except listed)"
                                                 else -> "Blacklist (ACCEPT)"
                                             }
-                                            Text(desc, color = Color.Black, fontSize = 14.sp)
+                                            Text(desc, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = serviceFilterDefaultExpanded, onDismissRequest = { serviceFilterDefaultExpanded = false }) {
@@ -1294,8 +1295,8 @@ fun AdvancedFirewallScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -1338,13 +1339,13 @@ fun AdvancedFirewallScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { serviceProtoExpanded = true }
                                                 .padding(12.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text(serviceFilterInputProto, color = Color.Black, fontSize = 13.sp)
+                                            Text(serviceFilterInputProto, color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = serviceProtoExpanded, onDismissRequest = { serviceProtoExpanded = false }) {
@@ -1380,22 +1381,22 @@ fun AdvancedFirewallScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
                                     Text("Current Services Rules List", fontWeight = FontWeight.Bold, color = ArcherTeal, modifier = Modifier.padding(bottom = 12.dp))
 
                                     if (uiState.config.serviceFilterRules.isEmpty()) {
-                                        Text("No service filters configured yet.", color = Color.Gray, fontSize = 12.sp, modifier = Modifier.padding(vertical = 12.dp))
+                                        Text("No service filters configured yet.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, modifier = Modifier.padding(vertical = 12.dp))
                                     } else {
                                         uiState.config.serviceFilterRules.forEachIndexed { index, rule ->
                                             Row(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
                                                     .padding(vertical = 6.dp)
-                                                    .background(Color(0xFFFAFAFA), RoundedCornerShape(8.dp))
+                                                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
                                                     .padding(12.dp),
                                                 horizontalArrangement = Arrangement.SpaceBetween,
                                                 verticalAlignment = Alignment.CenterVertically
@@ -1405,7 +1406,7 @@ fun AdvancedFirewallScreen(
                                                     val dst = if (rule.dstIp.isEmpty() && rule.dstPort.isEmpty()) "ANY" else "${rule.dstIp}:${rule.dstPort}"
                                                     val protoInfo = if (rule.proto == "OTHER") "Proto:${rule.protoNo}" else rule.proto
                                                     Text("Src: $src ➔ Dst: $dst", fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
-                                                    Text("Protocol: $protoInfo", fontSize = 11.sp, color = Color.Gray)
+                                                    Text("Protocol: $protoInfo", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                                 }
                                                 IconButton(onClick = { deleteServiceRule(index) }) {
                                                     Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete", tint = Color.Red)
@@ -1421,15 +1422,15 @@ fun AdvancedFirewallScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
                                     Text("Dynamic DNS Hijacking + DNS Sinkhole", fontWeight = FontWeight.Bold, color = ArcherTeal, modifier = Modifier.padding(bottom = 12.dp))
                                     Text(
                                         text = "Resolves domains locally via dnsmasq and blocks them by returning an invalid IP address (0.0.0.0). This prevents clients from connecting to the server while avoiding shared CDN IP blocking issues.",
-                                        color = Color.Gray,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontSize = 12.sp,
                                         lineHeight = 16.sp
                                     )
@@ -1439,7 +1440,7 @@ fun AdvancedFirewallScreen(
                                             Text("Block Public DoH/DoT Providers", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                                             Text(
                                                 text = "Drops traffic to known DNS-over-HTTPS IPs (Google, Cloudflare, Quad9, etc.) and blocks port 853. This forces devices with custom Secure DNS settings to fall back to the router's DNS.",
-                                                color = Color.Gray,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                                 fontSize = 11.sp,
                                                 lineHeight = 14.sp
                                             )
@@ -1457,8 +1458,8 @@ fun AdvancedFirewallScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -1493,22 +1494,22 @@ fun AdvancedFirewallScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
                                     Text("Blocked Domains List", fontWeight = FontWeight.Bold, color = ArcherTeal, modifier = Modifier.padding(bottom = 12.dp))
 
                                     if (uiState.blockedDomains.isEmpty()) {
-                                        Text("No domains blocked yet.", color = Color.Gray, fontSize = 12.sp, modifier = Modifier.padding(vertical = 12.dp))
+                                        Text("No domains blocked yet.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, modifier = Modifier.padding(vertical = 12.dp))
                                     } else {
                                         uiState.blockedDomains.forEach { domain ->
                                             Row(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
                                                     .padding(vertical = 4.dp)
-                                                    .background(Color(0xFFFAFAFA), RoundedCornerShape(8.dp))
+                                                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
                                                     .padding(horizontal = 12.dp, vertical = 8.dp),
                                                 horizontalArrangement = Arrangement.SpaceBetween,
                                                 verticalAlignment = Alignment.CenterVertically
@@ -1568,7 +1569,17 @@ fun DaysOfWeekSelector(
     onDaysChanged: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val dayLabels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+    // Padavan stores the 7-day bitmask in Sunday..Saturday order (index 0 = Sun,
+    // index 1 = Mon, ..., index 6 = Sat), matching setDateCheck() in general.js.
+    val days = listOf(
+        "Mo" to 1,
+        "Tu" to 2,
+        "We" to 3,
+        "Th" to 4,
+        "Fr" to 5,
+        "Sa" to 6,
+        "Su" to 0
+    )
     val daysBitmask = if (selectedDays.length == 7) selectedDays else "1111111"
 
     Column(modifier = modifier.fillMaxWidth()) {
@@ -1582,26 +1593,26 @@ fun DaysOfWeekSelector(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            dayLabels.forEachIndexed { index, label ->
-                val isSelected = daysBitmask[index] == '1'
+            days.forEach { (label, bitIndex) ->
+                val isSelected = daysBitmask[bitIndex] == '1'
                 Box(
                     modifier = Modifier
                         .size(38.dp)
                         .clip(RoundedCornerShape(19.dp))
-                        .background(if (isSelected) ArcherTeal else Color(0xFFF0F0F0))
-                        .border(1.dp, if (isSelected) ArcherTeal else Color.LightGray, RoundedCornerShape(19.dp))
+                        .background(if (isSelected) ArcherTeal else MaterialTheme.colorScheme.surfaceVariant)
+                        .border(1.dp, if (isSelected) ArcherTeal else MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(19.dp))
                         .clickable {
                             val newBitmask = StringBuilder(daysBitmask).apply {
-                                setCharAt(index, if (isSelected) '0' else '1')
+                                setCharAt(bitIndex, if (isSelected) '0' else '1')
                             }.toString()
                             onDaysChanged(newBitmask)
                         },
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = label.take(1),
-                        color = if (isSelected) Color.White else Color.DarkGray,
-                        fontSize = 12.sp,
+                        text = label,
+                        color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -1647,7 +1658,7 @@ fun TimeIntervalSelector(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                             .clickable { startHourExpanded = true }
                             .padding(vertical = 10.dp, horizontal = 8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -1658,7 +1669,7 @@ fun TimeIntervalSelector(
                     }
                     DropdownMenu(expanded = startHourExpanded, onDismissRequest = { startHourExpanded = false }) {
                         (0..23).forEach { h ->
-                            val hStr = String.format("%02d", h)
+                            val hStr = String.format(Locale.US, "%02d", h)
                             DropdownMenuItem(
                                 text = { Text(hStr) },
                                 onClick = {
@@ -1675,7 +1686,7 @@ fun TimeIntervalSelector(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                             .clickable { startMinExpanded = true }
                             .padding(vertical = 10.dp, horizontal = 8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -1685,7 +1696,7 @@ fun TimeIntervalSelector(
                         Icon(Icons.Default.ArrowDropDown, contentDescription = null, modifier = Modifier.size(16.dp))
                     }
                     DropdownMenu(expanded = startMinExpanded, onDismissRequest = { startMinExpanded = false }) {
-                        val minutes = (0..55 step 5).map { String.format("%02d", it) } + "59"
+                        val minutes = (0..55 step 5).map { String.format(Locale.US, "%02d", it) } + "59"
                         minutes.forEach { mStr ->
                             DropdownMenuItem(
                                 text = { Text(mStr) },
@@ -1710,7 +1721,7 @@ fun TimeIntervalSelector(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                             .clickable { endHourExpanded = true }
                             .padding(vertical = 10.dp, horizontal = 8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -1721,7 +1732,7 @@ fun TimeIntervalSelector(
                     }
                     DropdownMenu(expanded = endHourExpanded, onDismissRequest = { endHourExpanded = false }) {
                         (0..23).forEach { h ->
-                            val hStr = String.format("%02d", h)
+                            val hStr = String.format(Locale.US, "%02d", h)
                             DropdownMenuItem(
                                 text = { Text(hStr) },
                                 onClick = {
@@ -1738,7 +1749,7 @@ fun TimeIntervalSelector(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                             .clickable { endMinExpanded = true }
                             .padding(vertical = 10.dp, horizontal = 8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -1748,7 +1759,7 @@ fun TimeIntervalSelector(
                         Icon(Icons.Default.ArrowDropDown, contentDescription = null, modifier = Modifier.size(16.dp))
                     }
                     DropdownMenu(expanded = endMinExpanded, onDismissRequest = { endMinExpanded = false }) {
-                        val minutes = (0..55 step 5).map { String.format("%02d", it) } + "59"
+                        val minutes = (0..55 step 5).map { String.format(Locale.US, "%02d", it) } + "59"
                         minutes.forEach { mStr ->
                             DropdownMenuItem(
                                 text = { Text(mStr) },

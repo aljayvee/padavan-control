@@ -52,12 +52,13 @@ class LoginViewModel(
 
     init {
         val isOnboarded = credentialStore.isOnboardingCompleted()
+        val remembered = credentialStore.isRememberCredentials()
         _uiState.update {
             it.copy(
                 ipAddress = credentialStore.getRouterIp(),
                 username = credentialStore.getUsername(),
-                password = credentialStore.getPassword(),
-                rememberMe = credentialStore.isRememberCredentials(),
+                password = if (remembered) credentialStore.getPassword() else "",
+                rememberMe = remembered,
                 currentStep = if (isOnboarded) LoginStep.CREDENTIALS else LoginStep.SCANNING
             )
         }
@@ -65,6 +66,27 @@ class LoginViewModel(
 
     fun updateIpAddress(value: String) {
         _uiState.update { it.copy(ipAddress = value) }
+    }
+
+    /**
+     * Re-read credentials from the secure store when the login screen is
+     * shown. The view model is created once at app start, so after logout or
+     * an unauthorized event its in-memory password could otherwise still be
+     * displayed on the login form.
+     */
+    fun refreshCredentialsFromStore() {
+        val isOnboarded = credentialStore.isOnboardingCompleted()
+        val remembered = credentialStore.isRememberCredentials()
+        _uiState.update {
+            it.copy(
+                ipAddress = credentialStore.getRouterIp(),
+                username = credentialStore.getUsername(),
+                password = if (remembered) credentialStore.getPassword() else "",
+                rememberMe = remembered,
+                isLoading = false,
+                currentStep = if (isOnboarded) LoginStep.CREDENTIALS else LoginStep.SCANNING
+            )
+        }
     }
 
     fun updateUsername(value: String) {
@@ -111,7 +133,8 @@ class LoginViewModel(
                 val success = repository.checkLogin(
                     state.ipAddress,
                     state.username,
-                    state.password
+                    state.password,
+                    state.rememberMe
                 )
 
                 _uiState.update { it.copy(isLoading = false) }
@@ -171,18 +194,40 @@ class LoginViewModel(
                         _uiState.update {
                             it.copy(
                                 discoveredRouters = discovered.toList(),
-                                scanStatusMessage = "Padavan Router found at $gatewayIp!"
+                                scanStatusMessage = "Router found at $gatewayIp!"
                             )
                         }
                     }
                 }
-                
-                // 2. Active scan via SSDP multicast fallback
-                _uiState.update { it.copy(scanStatusMessage = "Searching network via SSDP...") }
-                val ssdpIps = RouterDiscoveryService.discoverViaSsdp()
-                for (ip in ssdpIps) {
+
+                // 2. Scan the phone's /24. This is required when the Padavan
+                // router is an AP and the DHCP gateway is a different device.
+                // The service uses a small concurrency and jitter so DNS/DHCP
+                // on the LAN is not disturbed by a large ARP burst.
+                _uiState.update { it.copy(scanStatusMessage = "Scanning local subnet...") }
+                val subnetIps = RouterDiscoveryService.scanLocalSubnet(appContext)
+                for (ip in subnetIps) {
                     if (!discovered.contains(ip)) {
                         discovered.add(ip)
+                    }
+                }
+                if (discovered.isNotEmpty()) {
+                    _uiState.update {
+                        it.copy(
+                            discoveredRouters = discovered.toList(),
+                            scanStatusMessage = "Found ${discovered.size} router(s)..."
+                        )
+                    }
+                }
+
+                // 3. SSDP multicast fallback, only if nothing was found yet.
+                if (discovered.isEmpty()) {
+                    _uiState.update { it.copy(scanStatusMessage = "Searching network via SSDP...") }
+                    val ssdpIps = RouterDiscoveryService.discoverViaSsdp()
+                    for (ip in ssdpIps) {
+                        if (!discovered.contains(ip)) {
+                            discovered.add(ip)
+                        }
                     }
                 }
 
@@ -193,9 +238,9 @@ class LoginViewModel(
                         scanStatusMessage = if (discovered.isNotEmpty()) {
                             "Scan complete. Found ${discovered.size} router(s)."
                         } else {
-                            "No Padavan Router detected on this Wi-Fi."
+                            "No router detected on this Wi-Fi."
                         },
-                        errorMessage = if (discovered.isEmpty()) "No Padavan Router detected on this Wi-Fi. Please enter IP manually." else null
+                        errorMessage = if (discovered.isEmpty()) "No router detected on this Wi-Fi. Please enter IP manually." else null
                     )
                 }
             } catch (e: Exception) {

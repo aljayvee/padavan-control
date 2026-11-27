@@ -3,6 +3,7 @@ package com.example.padavancontrol.ui.screens
 import com.example.padavancontrol.data.t
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,8 +13,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
@@ -77,6 +80,7 @@ fun LoginScreen(
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
+        viewModel.refreshCredentialsFromStore()
         viewModel.events.collect { event ->
             when (event) {
                 is LoginEvent.LoginSuccess -> onLoginSuccess()
@@ -96,14 +100,15 @@ fun LoginScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-        contentAlignment = Alignment.Center
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
             Box(
                 modifier = Modifier
@@ -127,7 +132,7 @@ fun LoginScreen(
             )
 
             Text(
-                text = t("Secure Companion App for newifi D2"),
+                text = t("Secure Companion App for Padavan Routers"),
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -201,7 +206,7 @@ fun LoginScreen(
                                                 Spacer(modifier = Modifier.width(12.dp))
                                                 Column(modifier = Modifier.weight(1f)) {
                                                     Text(
-                                                        text = t("Padavan Router"),
+                                                        text = t("Router"),
                                                         fontSize = 14.sp,
                                                         fontWeight = FontWeight.Bold,
                                                         color = MaterialTheme.colorScheme.onSurface
@@ -297,6 +302,34 @@ fun LoginScreen(
                         }
                         LoginStep.CREDENTIALS -> {
                             Column(modifier = Modifier.fillMaxWidth()) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = t("Router IP Address"),
+                                            fontSize = 12.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Text(
+                                            text = uiState.ipAddress.ifBlank { t("Not selected") },
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = ArcherTeal
+                                        )
+                                    }
+                                    TextButton(onClick = { viewModel.updateStep(LoginStep.MANUAL_IP) }) {
+                                        Text(
+                                            text = t("Set IP Manually"),
+                                            color = ArcherTeal,
+                                            fontSize = 12.sp
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
                                 Text(
                                     text = t("Username"),
                                     fontSize = 14.sp,
@@ -346,6 +379,22 @@ fun LoginScreen(
                                         }
                                     }
                                 )
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Checkbox(
+                                        checked = uiState.rememberMe,
+                                        onCheckedChange = { viewModel.updateRememberMe(it) },
+                                        colors = CheckboxDefaults.colors(checkedColor = ArcherTeal)
+                                    )
+                                    Text(
+                                        text = t("Remember Credentials"),
+                                        fontSize = 13.sp,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
 
                                 uiState.errorMessage?.let {
                                     Spacer(modifier = Modifier.height(12.dp))

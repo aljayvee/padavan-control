@@ -4,6 +4,19 @@ Welcome to the Padavan Control repository. This app is a native, modern Android 
 
 This document details the architecture, core codebase functionality, security precautions, tested hardware, and hardware-backed storage mechanisms built into the application to ensure secure, reliable administrative access.
 
+## Fork changes
+
+This fork adds:
+
+- Local `/24` subnet scanning, so an AP-mode Padavan router is found even when it is not the DHCP gateway.
+- Name-agnostic detection: any `index.asp` protected by HTTP Basic auth, or identified as `httpd`/Padavan-compatible, is listed.
+- Correct router name/IP display after discovery and login.
+- Correct 2.4 GHz / 5 GHz / wired device classification.
+- Model-aware port count (4 ports on RM-AC2100, 5 on Newifi D2).
+- Gentle subnet discovery that avoids disrupting router DNS/DHCP on weak hardware.
+- Fixed action buttons that the router was silently ignoring: Wi-Fi radio toggles, device block/unblock, factory reset, NVRAM/storage commit, and wireless settings saves (SSID/password, guest, bridge, RADIUS, MAC filter).
+- Manual IP and the saved router address continue to work as before.
+
 ---
 
 ## Table of Contents

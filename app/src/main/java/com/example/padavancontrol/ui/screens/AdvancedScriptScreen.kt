@@ -95,12 +95,10 @@ fun AdvancedScriptScreen(
         }
     }
 
-    val title = remember(section) {
-        when (section) {
-            "Scripts" -> t("Custom Startup Bash Scripts")
-            "Detector" -> t("Internet Watchdog Detector")
-            else -> "Customization"
-        }
+    val title = when (section) {
+        "Scripts" -> t("Custom Startup Bash Scripts")
+        "Detector" -> t("Internet Watchdog Detector")
+        else -> "Customization"
     }
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -112,7 +110,7 @@ fun AdvancedScriptScreen(
     }
 
     // Active script dialog editor states
-    var editingScriptKey by remember { mutableStateOf<String?>(null) } // "Init", "Start", "WanUp", "WanDown", t("Shutdown"), "Firewall", "EzButton"
+    var editingScriptKey by remember { mutableStateOf<String?>(null) } // "Init", "Start", "WanUp", "WanDown", "Shutdown", "Firewall", "EzButton"
     var editingScriptContent by remember { mutableStateOf("") }
 
     // Watchdog drop down states
@@ -224,7 +222,7 @@ fun AdvancedScriptScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     Text("Error loading scripts", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(uiState.errorMessage ?: "", color = Color.Gray, fontSize = 14.sp)
+                    Text(uiState.errorMessage ?: "", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(24.dp))
                     Button(
                         onClick = { viewModel.loadConfig(pagePath) },
@@ -244,7 +242,7 @@ fun AdvancedScriptScreen(
                     LinearProgressIndicator(
                         progress = { animatedProgress },
                         color = ArcherTeal,
-                        trackColor = Color(0xFFE0F2F1),
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(8.dp)
@@ -260,7 +258,7 @@ fun AdvancedScriptScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = uiState.loadStatus.ifEmpty { "Fetching customized scripts..." },
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 14.sp,
                         textAlign = TextAlign.Center
                     )
@@ -278,8 +276,8 @@ fun AdvancedScriptScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 16.dp)
-                            .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
@@ -295,13 +293,13 @@ fun AdvancedScriptScreen(
                                     text = t("System Customization Core"),
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 14.sp,
-                                    color = Color.Black
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = t("Adjust custom startup shells or ping watchdog properties. These bash script instructions run automatically at specific hardware cycles."),
-                                color = Color.Gray,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 12.sp
                             )
                         }
@@ -315,7 +313,7 @@ fun AdvancedScriptScreen(
                             val scriptItems = listOf(
                                 Triple("Init", t("Run Before Router Initialized"), "scripts.init_script.sh"),
                                 Triple("Start", t("Run After Router Started"), "scripts.start_script.sh"),
-                                Triple(t("Shutdown"), t("Run Before Router Shutdown"), "scripts.shutdown_script.sh"),
+                                Triple("Shutdown", t("Run Before Router Shutdown"), "scripts.shutdown_script.sh"),
                                 Triple("WanUpDown", t("Run After WAN Up/Down Events"), "scripts.post_wan_script.sh / post_wandn_script.sh"),
                                 Triple("Firewall", t("Run After Firewall Rules Restarted"), "scripts.post_iptables_script.sh"),
                                 Triple("EzButton", t("Run On Press WPS/FN Ez-Buttons"), "scripts.ez_buttons_script.sh")
@@ -335,15 +333,15 @@ fun AdvancedScriptScreen(
                                                 editingScriptContent = when (key) {
                                                     "Init" -> uiState.config.scriptInit
                                                     "Start" -> uiState.config.scriptStart
-                                                    t("Shutdown") -> uiState.config.scriptShutdown
+                                                    "Shutdown" -> uiState.config.scriptShutdown
                                                     "Firewall" -> uiState.config.scriptIpRules
                                                     "EzButton" -> uiState.config.scriptEzButton
                                                     else -> ""
                                                 }
                                             }
                                         }
-                                        .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Row(
@@ -354,20 +352,20 @@ fun AdvancedScriptScreen(
                                             modifier = Modifier
                                                 .size(40.dp)
                                                 .clip(RoundedCornerShape(8.dp))
-                                                .background(Color(0xFFE0F2F1)),
+                                                .background(MaterialTheme.colorScheme.surfaceVariant),
                                             contentAlignment = Alignment.Center
                                         ) {
                                             Text("$", color = ArcherTeal, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                                         }
                                         Spacer(modifier = Modifier.width(16.dp))
                                         Column(modifier = Modifier.weight(1f)) {
-                                            Text(label, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color.Black)
-                                            Text(filename, color = Color.Gray, fontSize = 11.sp)
+                                            Text(label, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                                            Text(filename, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
                                         }
                                         Icon(
                                             imageVector = Icons.Default.ArrowDropDown,
                                             contentDescription = "Edit Script",
-                                            tint = Color.Gray,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                             modifier = Modifier.size(24.dp)
                                         )
                                     }
@@ -381,8 +379,8 @@ fun AdvancedScriptScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -393,7 +391,7 @@ fun AdvancedScriptScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                 .clickable { pollModeExpanded = true }
                                                 .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -405,7 +403,7 @@ fun AdvancedScriptScreen(
                                                 "2" -> "TCP Connection check"
                                                 else -> t("Disabled")
                                             }
-                                            Text(desc, color = Color.Black, fontSize = 14.sp)
+                                            Text(desc, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                         }
                                         DropdownMenu(expanded = pollModeExpanded, onDismissRequest = { pollModeExpanded = false }) {
@@ -421,7 +419,7 @@ fun AdvancedScriptScreen(
                                             Row(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                                     .clickable { actionExpanded = true }
                                                     .padding(14.dp),
                                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -433,7 +431,7 @@ fun AdvancedScriptScreen(
                                                     "2" -> t("Execute custom failure script")
                                                     else -> "Restart WAN (0)"
                                                 }
-                                                Text(desc, color = Color.Black, fontSize = 14.sp)
+                                                Text(desc, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                                 Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                                             }
                                             DropdownMenu(expanded = actionExpanded, onDismissRequest = { actionExpanded = false }) {
@@ -452,13 +450,13 @@ fun AdvancedScriptScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(bottom = 16.dp)
-                                        .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Column(modifier = Modifier.padding(16.dp)) {
                                         Text(t("List of Internet Hosts for Check Connection"), fontWeight = FontWeight.Bold, color = ArcherTeal, modifier = Modifier.padding(bottom = 16.dp))
-                                        Text(t("Provide target IP addresses or domain names. For TCP Connection mode, add port numbers (e.g. 1.1.1.1:53)."), color = Color.Gray, fontSize = 11.sp, modifier = Modifier.padding(bottom = 16.dp))
+                                        Text(t("Provide target IP addresses or domain names. For TCP Connection mode, add port numbers (e.g. 1.1.1.1:53)."), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp, modifier = Modifier.padding(bottom = 16.dp))
 
                                         OutlinedTextField(
                                             value = uiState.config.pingHost1,
@@ -513,8 +511,8 @@ fun AdvancedScriptScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(bottom = 16.dp)
-                                        .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Column(modifier = Modifier.padding(16.dp)) {
@@ -565,8 +563,8 @@ fun AdvancedScriptScreen(
                                     .fillMaxWidth()
                                     .height(500.dp)
                                     .padding(16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(16.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(16.dp)
                             ) {
                                 Column(
@@ -577,7 +575,7 @@ fun AdvancedScriptScreen(
                                     val titleText = when (editingScriptKey) {
                                         "Init" -> "Before Router Initialized"
                                         "Start" -> "After Router Started"
-                                        t("Shutdown") -> "Before Router Shutdown"
+                                        "Shutdown" -> "Before Router Shutdown"
                                         "WanUp" -> "After WAN Up Event"
                                         "WanDown" -> "After WAN Down Event"
                                         "Firewall" -> "After Firewall Rules Restarted"
@@ -588,7 +586,7 @@ fun AdvancedScriptScreen(
                                     val descText = when (editingScriptKey) {
                                         "Init" -> "Executes before any network modules or services are started."
                                         "Start" -> "Executes immediately after kernel boot finish."
-                                        t("Shutdown") -> "Executes before system restarts or powers down."
+                                        "Shutdown" -> "Executes before system restarts or powers down."
                                         "WanUp" -> "Executes once WAN dial up completes successfully."
                                         "WanDown" -> "Executes once WAN dials down or connection fails."
                                         "Firewall" -> "Executes after iptables rules are flushed/reapplied."
@@ -605,14 +603,14 @@ fun AdvancedScriptScreen(
                                         if (editingScriptKey == "WanUp" || editingScriptKey == "WanDown") {
                                             Row(
                                                 modifier = Modifier
-                                                    .border(1.dp, Color.LightGray, RoundedCornerShape(6.dp))
+                                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(6.dp))
                                                     .clip(RoundedCornerShape(6.dp))
                                             ) {
                                                 Text(
                                                     "WAN Up",
                                                     fontSize = 11.sp,
                                                     fontWeight = FontWeight.Bold,
-                                                    color = if (editingScriptKey == "WanUp") Color.White else Color.Gray,
+                                                    color = if (editingScriptKey == "WanUp") Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
                                                     modifier = Modifier
                                                         .background(if (editingScriptKey == "WanUp") ArcherTeal else Color.Transparent)
                                                         .clickable {
@@ -625,7 +623,7 @@ fun AdvancedScriptScreen(
                                                     "WAN Down",
                                                     fontSize = 11.sp,
                                                     fontWeight = FontWeight.Bold,
-                                                    color = if (editingScriptKey == "WanDown") Color.White else Color.Gray,
+                                                    color = if (editingScriptKey == "WanDown") Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
                                                     modifier = Modifier
                                                         .background(if (editingScriptKey == "WanDown") ArcherTeal else Color.Transparent)
                                                         .clickable {
@@ -638,7 +636,7 @@ fun AdvancedScriptScreen(
                                         }
                                     }
                                     Spacer(modifier = Modifier.height(4.dp))
-                                    Text(descText, fontSize = 11.sp, color = Color.Gray)
+                                    Text(descText, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     Spacer(modifier = Modifier.height(12.dp))
 
                                     OutlinedTextField(
@@ -658,17 +656,17 @@ fun AdvancedScriptScreen(
                                     ) {
                                         Button(
                                             onClick = { editingScriptKey = null },
-                                            colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray),
+                                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                                             modifier = Modifier.padding(end = 8.dp)
                                         ) {
-                                            Text("Cancel", color = Color.Black)
+                                            Text("Cancel", color = MaterialTheme.colorScheme.onSurface)
                                         }
                                         Button(
                                             onClick = {
                                                 val updated = when (editingScriptKey) {
                                                     "Init" -> uiState.config.copy(scriptInit = editingScriptContent)
                                                     "Start" -> uiState.config.copy(scriptStart = editingScriptContent, scriptStartup = editingScriptContent)
-                                                    t("Shutdown") -> uiState.config.copy(scriptShutdown = editingScriptContent)
+                                                    "Shutdown" -> uiState.config.copy(scriptShutdown = editingScriptContent)
                                                     "WanUp" -> uiState.config.copy(scriptWanUp = editingScriptContent)
                                                     "WanDown" -> uiState.config.copy(scriptWanDown = editingScriptContent)
                                                     "Firewall" -> uiState.config.copy(scriptIpRules = editingScriptContent)

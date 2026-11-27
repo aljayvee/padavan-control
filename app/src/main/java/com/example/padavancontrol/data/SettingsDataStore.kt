@@ -17,6 +17,15 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
     name = "padavan_settings"
 )
 
+data class MonitoringPreferences(
+    val monitoringEnabled: Boolean = false,
+    val monitorIntervalMinutes: Int = 15,
+    val notifyWanDisconnect: Boolean = true,
+    val notifyNewDevice: Boolean = true,
+    val notifyHighTemp: Boolean = true,
+    val highTempThreshold: Int = 75
+)
+
 /**
  * Centralized DataStore wrapper for persisting user navigation state,
  * form drafts, monitoring preferences, and last-known router state
@@ -164,6 +173,22 @@ class SettingsDataStore(private val applicationContext: Context) {
 
     fun getHighTempThreshold(): Flow<Int> =
         applicationContext.dataStore.data.map { prefs -> prefs[highTempThresholdKey] ?: 75 }
+
+    /**
+     * Single combined flow for all background-monitoring preferences.
+     * Avoids opening a separate DataStore collector for every setting.
+     */
+    fun getMonitoringPreferences(): Flow<MonitoringPreferences> =
+        applicationContext.dataStore.data.map { prefs ->
+            MonitoringPreferences(
+                monitoringEnabled = prefs[monitoringEnabledKey] ?: false,
+                monitorIntervalMinutes = prefs[monitorIntervalMinutesKey] ?: 15,
+                notifyWanDisconnect = prefs[notifyWanDisconnectKey] ?: true,
+                notifyNewDevice = prefs[notifyNewDeviceKey] ?: true,
+                notifyHighTemp = prefs[notifyHighTempKey] ?: true,
+                highTempThreshold = prefs[highTempThresholdKey] ?: 75
+            )
+        }
 
     // ─── App Language Mode ─────────────────────────────────────────
 

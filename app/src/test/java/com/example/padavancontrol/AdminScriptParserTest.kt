@@ -197,4 +197,37 @@ class AdminScriptParserTest : ParserTestBase() {
         assertEquals(8, config.pingTimeout)
         assertEquals("1", config.pingAction)
     }
+
+    @Test
+    fun testParseAdminConfig_RealSystemPageAndPrefixIsolation() {
+        val mockHtml = """
+            <!DOCTYPE html>
+            <html>
+            <head>
+            <script>
+            function initial() {
+                document.form.computer_name.value = "";
+                document.form.http_passwd2.value = "";
+            }
+            var telnetd_port = "2323";
+            var telnetd = "0";
+            </script>
+            </head>
+            <body>
+            <input type="hidden" name="computer_name2" value="RM-AC2100">
+            <input type="text" name="computer_name" value="">
+            <select name="time_zone">
+                <option value="UTC-3">Moscow</option>
+                <option value="CST-8" selected>Beijing</option>
+            </select>
+            </body>
+            </html>
+        """.trimIndent()
+
+        val config = PadavanResponseParser.parseAdminConfig(mockHtml)
+        assertEquals("RM-AC2100", config.deviceName)
+        assertEquals("CST-8", config.timezone)
+        assertFalse(config.enableTelnet)
+        assertEquals("2323", config.telnetPort)
+    }
 }

@@ -303,7 +303,7 @@ fun AdvancedLanScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     Text("Error loading settings", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(uiState.errorMessage ?: "", color = Color.Gray, fontSize = 14.sp)
+                    Text(uiState.errorMessage ?: "", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(24.dp))
                     Button(
                         onClick = { viewModel.loadConfig(pagePath) },
@@ -323,7 +323,7 @@ fun AdvancedLanScreen(
                     LinearProgressIndicator(
                         progress = { animatedProgress },
                         color = ArcherTeal,
-                        trackColor = Color(0xFFE0F2F1),
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(8.dp)
@@ -339,7 +339,7 @@ fun AdvancedLanScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = uiState.loadStatus.ifEmpty { "Fetching LAN configuration..." },
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 14.sp,
                         textAlign = TextAlign.Center
                     )
@@ -357,8 +357,8 @@ fun AdvancedLanScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 16.dp)
-                            .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
@@ -377,14 +377,14 @@ fun AdvancedLanScreen(
                                     text = "Padavan Subnet Settings Manager",
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 14.sp,
-                                    color = Color.Black
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "Highly stable Archer teal form validations linked instantly to flash NVRAM configuration blocks.",
                                 fontSize = 12.sp,
-                                color = Color.Gray
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -396,8 +396,8 @@ fun AdvancedLanScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -437,7 +437,7 @@ fun AdvancedLanScreen(
                                     ) {
                                         Column {
                                             Text("Spanning Tree Protocol (STP)", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Prevent network loops in bridge", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Prevent network loops in bridge", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.lanStp,
@@ -454,8 +454,8 @@ fun AdvancedLanScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -468,7 +468,7 @@ fun AdvancedLanScreen(
                                     ) {
                                         Column {
                                             Text("Enable DHCP Server", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Assign dynamic IPs to local clients", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Assign dynamic IPs to local clients", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.dhcpEnabled,
@@ -634,7 +634,7 @@ fun AdvancedLanScreen(
                                         ) {
                                             Column {
                                                 Text("Enable Static IP Assignment", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                                Text("Bind client MACs to fixed local IPs", color = Color.Gray, fontSize = 12.sp)
+                                                Text("Bind client MACs to fixed local IPs", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                             }
                                             Switch(
                                                 checked = uiState.config.dhcpStaticEnabled,
@@ -650,7 +650,7 @@ fun AdvancedLanScreen(
                                         ) {
                                             Column {
                                                 Text("Enable Static ARP Binding", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                                Text("Secure networking using ARP bindings", color = Color.Gray, fontSize = 12.sp)
+                                                Text("Secure networking using ARP bindings", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                             }
                                             Switch(
                                                 checked = uiState.config.dhcpStaticArp,
@@ -668,8 +668,8 @@ fun AdvancedLanScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(bottom = 16.dp)
-                                        .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Column(modifier = Modifier.padding(16.dp)) {
@@ -717,15 +717,15 @@ fun AdvancedLanScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(bottom = 16.dp)
-                                        .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Column(modifier = Modifier.padding(16.dp)) {
                                         Text("Current Static Assignments (${uiState.config.staticLeases.size})", fontWeight = FontWeight.Bold, color = ArcherTeal, modifier = Modifier.padding(bottom = 12.dp))
                                         
                                         if (uiState.config.staticLeases.isEmpty()) {
-                                            Text("No assignments active.", color = Color.Gray, fontSize = 12.sp, modifier = Modifier.padding(vertical = 12.dp))
+                                            Text("No assignments active.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, modifier = Modifier.padding(vertical = 12.dp))
                                         } else {
                                             uiState.config.staticLeases.forEachIndexed { index, lease ->
                                                 Row(
@@ -733,15 +733,15 @@ fun AdvancedLanScreen(
                                                         .fillMaxWidth()
                                                         .padding(vertical = 8.dp)
                                                         .clip(RoundedCornerShape(8.dp))
-                                                        .background(Color(0xFFFAFAFA))
+                                                        .background(MaterialTheme.colorScheme.surfaceVariant)
                                                         .padding(12.dp),
                                                     horizontalArrangement = Arrangement.SpaceBetween,
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
                                                     Column(modifier = Modifier.weight(1f)) {
                                                         Text(lease.name, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                                        Text("IP: ${lease.ip}", fontSize = 12.sp, color = Color.DarkGray)
-                                                        Text("MAC: ${lease.mac}", fontSize = 12.sp, color = Color.Gray)
+                                                        Text("IP: ${lease.ip}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                        Text("MAC: ${lease.mac}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                                     }
                                                     IconButton(onClick = { deleteLease(index) }) {
                                                         Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete", tint = Color.Red)
@@ -759,8 +759,8 @@ fun AdvancedLanScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -773,7 +773,7 @@ fun AdvancedLanScreen(
                                     ) {
                                         Column {
                                             Text("Enable Multicast Routing (IGMP Proxy)", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Allow IGMP multicast traffic to LAN", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Allow IGMP multicast traffic to LAN", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.mrEnable,
@@ -847,7 +847,7 @@ fun AdvancedLanScreen(
                                         ) {
                                             Column {
                                                 Text("Use udpxy proxy inside xupnpd", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                                Text("Bridge multicast feeds through proxy", color = Color.Gray, fontSize = 12.sp)
+                                                Text("Bridge multicast feeds through proxy", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                             }
                                             Switch(
                                                 checked = uiState.config.xupnpdUdpxy,
@@ -866,7 +866,7 @@ fun AdvancedLanScreen(
                                     ) {
                                         Column {
                                             Text("Enable IGMP/MLD Snooping", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Optimize switch traffic using snooping", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Optimize switch traffic using snooping", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.igmpSnoop,
@@ -1008,8 +1008,8 @@ fun AdvancedLanScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -1022,7 +1022,7 @@ fun AdvancedLanScreen(
                                     ) {
                                         Column {
                                             Text("Use DHCP Routes", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Obtain routes automatically from upstream DHCP", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Obtain routes automatically from upstream DHCP", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.useDhcpRoutes,
@@ -1038,7 +1038,7 @@ fun AdvancedLanScreen(
                                     ) {
                                         Column {
                                             Text("Enable Static Routes", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Define custom packet routing bounds", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Define custom packet routing bounds", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.routeEnabled,
@@ -1054,15 +1054,15 @@ fun AdvancedLanScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(bottom = 16.dp)
-                                        .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Column(modifier = Modifier.padding(16.dp)) {
                                         Text("Current Routing Rules (${uiState.config.staticRoutes.size})", fontWeight = FontWeight.Bold, color = ArcherTeal, modifier = Modifier.padding(bottom = 12.dp))
                                         
                                         if (uiState.config.staticRoutes.isEmpty()) {
-                                            Text("No custom routes defined.", color = Color.Gray, fontSize = 12.sp, modifier = Modifier.padding(vertical = 12.dp))
+                                            Text("No custom routes defined.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, modifier = Modifier.padding(vertical = 12.dp))
                                         } else {
                                             uiState.config.staticRoutes.forEachIndexed { index, route ->
                                                 Row(
@@ -1070,15 +1070,15 @@ fun AdvancedLanScreen(
                                                         .fillMaxWidth()
                                                         .padding(vertical = 8.dp)
                                                         .clip(RoundedCornerShape(8.dp))
-                                                        .background(Color(0xFFFAFAFA))
+                                                        .background(MaterialTheme.colorScheme.surfaceVariant)
                                                         .padding(12.dp),
                                                     horizontalArrangement = Arrangement.SpaceBetween,
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
                                                     Column(modifier = Modifier.weight(1f)) {
                                                         Text("Dest: ${route.destIp}", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                                        Text("Mask: ${route.netmask}", fontSize = 12.sp, color = Color.DarkGray)
-                                                        Text("GW: ${route.gateway} | Metric: ${route.metric} | IF: ${route.interfaceName}", fontSize = 12.sp, color = Color.Gray)
+                                                        Text("Mask: ${route.netmask}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                        Text("GW: ${route.gateway} | Metric: ${route.metric} | IF: ${route.interfaceName}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                                     }
                                                     IconButton(onClick = { viewModel.deleteStaticRoute(index, "Advanced_GWStaticRoute_Content.asp") }) {
                                                         Icon(Icons.Filled.Delete, contentDescription = "Delete Route", tint = Color(0xFFE53935))
@@ -1094,8 +1094,8 @@ fun AdvancedLanScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(bottom = 16.dp)
-                                        .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Column(modifier = Modifier.padding(16.dp)) {
@@ -1186,8 +1186,8 @@ fun AdvancedLanScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -1200,7 +1200,7 @@ fun AdvancedLanScreen(
                                     ) {
                                         Column {
                                             Text("Green Ethernet", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("Reduce power consumption dynamically", color = Color.Gray, fontSize = 12.sp)
+                                            Text("Reduce power consumption dynamically", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.greenEthernet,
@@ -1216,7 +1216,7 @@ fun AdvancedLanScreen(
                                     ) {
                                         Column {
                                             Text("Energy Efficient Ethernet (EEE)", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("802.3az stateful ethernet power saving", color = Color.Gray, fontSize = 12.sp)
+                                            Text("802.3az stateful ethernet power saving", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                         }
                                         Switch(
                                             checked = uiState.config.eeeEnabled,
@@ -1271,8 +1271,8 @@ fun AdvancedLanScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(bottom = 16.dp)
-                                        .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Column(modifier = Modifier.padding(16.dp)) {
@@ -1290,7 +1290,7 @@ fun AdvancedLanScreen(
                                             
                                             // Link State Badge
                                             val badgeColor = when {
-                                                portConfig.linkState.contains("No link", ignoreCase = true) -> Color.Gray
+                                                portConfig.linkState.contains("No link", ignoreCase = true) -> MaterialTheme.colorScheme.onSurfaceVariant
                                                 portConfig.linkState.contains("1000", ignoreCase = true) -> Color(0xFF4CAF50)
                                                 else -> Color(0xFFFF9800)
                                             }
@@ -1413,8 +1413,8 @@ fun AdvancedLanScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -1449,15 +1449,15 @@ fun AdvancedLanScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
-                                    .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
                                     Text("Connected & DHCP Lease Devices", fontWeight = FontWeight.Bold, color = ArcherTeal, modifier = Modifier.padding(bottom = 12.dp))
                                     
                                     if (uiState.config.wolDevices.isEmpty()) {
-                                        Text("No connected devices discovered.", color = Color.Gray, fontSize = 12.sp, modifier = Modifier.padding(vertical = 12.dp))
+                                        Text("No connected devices discovered.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, modifier = Modifier.padding(vertical = 12.dp))
                                     } else {
                                         uiState.config.wolDevices.forEach { device ->
                                             Row(
@@ -1465,7 +1465,7 @@ fun AdvancedLanScreen(
                                                     .fillMaxWidth()
                                                     .padding(vertical = 6.dp)
                                                     .clip(RoundedCornerShape(8.dp))
-                                                    .background(Color(0xFFFAFAFA))
+                                                    .background(MaterialTheme.colorScheme.surfaceVariant)
                                                     .clickable { wolTargetMac = device.mac }
                                                     .padding(12.dp),
                                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1473,9 +1473,9 @@ fun AdvancedLanScreen(
                                             ) {
                                                 Column(modifier = Modifier.weight(1f)) {
                                                     Text(device.name, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                                                    Text("MAC: ${device.mac}", fontSize = 11.sp, color = Color.DarkGray)
+                                                    Text("MAC: ${device.mac}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                                     if (device.vendor.isNotEmpty()) {
-                                                        Text("Vendor: ${device.vendor}", fontSize = 11.sp, color = Color.Gray)
+                                                        Text("Vendor: ${device.vendor}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                                     }
                                                 }
                                                 

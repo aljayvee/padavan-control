@@ -37,6 +37,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material.icons.filled.Menu
 import com.example.padavancontrol.theme.ArcherTeal
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -91,6 +92,11 @@ fun TrafficScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var dropdownExpanded by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
+
+    DisposableEffect(Unit) {
+        viewModel.setPollingEnabled(true)
+        onDispose { viewModel.setPollingEnabled(false) }
+    }
 
     val selectedDisplayName = t(INTERFACE_MAPPING[uiState.selectedInterface] ?: uiState.selectedInterface)
 

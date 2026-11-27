@@ -69,17 +69,27 @@ class TrafficViewModel(
 
     private var pollingJob: Job? = null
     private var lastTimestamp = 0L
+    private var isPollingActive = false
+    private val pollingBackoff = PollingBackoff(baseDelayMs = 2000L)
 
-    init {
-        startPolling()
+    fun setPollingEnabled(enabled: Boolean) {
+        if (enabled == isPollingActive) return
+        isPollingActive = enabled
+        if (enabled) {
+            startPolling()
+        } else {
+            pollingJob?.cancel()
+        }
     }
 
     private fun startPolling() {
         pollingJob?.cancel()
         pollingJob = viewModelScope.launch {
             while (isActive) {
+                var success = false
                 repository.getTrafficStats().collect { result ->
                     result.onSuccess { stats ->
+                        success = true
                         val updatedStates = _uiState.value.interfaceStates.toMutableMap()
                         val availableKeys = stats.keys.toList()
                         val now = System.currentTimeMillis()
@@ -180,7 +190,8 @@ class TrafficViewModel(
                         }
                     }
                 }
-                delay(2000)
+                if (success) pollingBackoff.onSuccess() else pollingBackoff.onFailure()
+                delay(pollingBackoff.nextDelayMs())
             }
         }
     }
@@ -201,7 +212,6 @@ class TrafficViewModel(
     }
 
     public override fun onCleared() {
-        super.onCleared()
         pollingJob?.cancel()
     }
 }

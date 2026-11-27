@@ -7,18 +7,29 @@ plugins {
 
 android {
     namespace = "com.example.padavancontrol"
-    compileSdk = 36
+    compileSdk = 37
+    compileSdkMinor = 2
     defaultConfig {
         applicationId = "com.example.padavancontrol"
         minSdk = 26
-        targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        targetSdk = 37
+        versionCode = 8
+        versionName = "1.2.5-fixes"
+    }
+
+    signingConfigs {
+        create("release") {
+            storeFile = file("release-key.jks")
+            storePassword = "android"
+            keyAlias = "release"
+            keyPassword = "android"
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

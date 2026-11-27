@@ -39,6 +39,8 @@ class SettingsViewModelTest {
         Dispatchers.setMain(testDispatcher)
 
         whenever(credentialStore.getRouterIp()).thenReturn("192.168.2.2")
+        whenever(credentialStore.getRouterName()).thenReturn("")
+        whenever(credentialStore.getHardwareModel()).thenReturn("NEWIFI3")
         whenever(credentialStore.isRememberCredentials()).thenReturn(true)
         whenever(credentialStore.isUseBiometric()).thenReturn(false)
         whenever(credentialStore.getUsername()).thenReturn("admin")
@@ -50,6 +52,9 @@ class SettingsViewModelTest {
         whenever(settingsDataStore.isNotifyNewDevice()).thenReturn(flowOf(true))
         whenever(settingsDataStore.isNotifyHighTemp()).thenReturn(flowOf(true))
         whenever(settingsDataStore.getHighTempThreshold()).thenReturn(flowOf(75))
+        whenever(settingsDataStore.getMonitoringPreferences()).thenReturn(
+            flowOf(com.example.padavancontrol.data.MonitoringPreferences())
+        )
     }
 
     @After
@@ -65,6 +70,25 @@ class SettingsViewModelTest {
         assertEquals("192.168.2.2", state.routerIp)
         assertTrue(state.rememberMe)
         assertFalse(state.useBiometric)
+    }
+
+    @Test
+    fun testRefreshConnectionInfo_updatesDetailsAfterDiscovery() = runTest(testDispatcher) {
+        val viewModel = SettingsViewModel(credentialStore, settingsDataStore)
+
+        // ViewModel was created before login and holds the default address.
+        assertEquals("192.168.2.2", viewModel.uiState.value.routerIp)
+
+        // Login/discovery saves the real router address and name.
+        whenever(credentialStore.getRouterIp()).thenReturn("192.168.31.10")
+        whenever(credentialStore.getRouterName()).thenReturn("RM-AC2100")
+        whenever(credentialStore.getHardwareModel()).thenReturn("RM-AC2100")
+
+        viewModel.refreshConnectionInfo()
+
+        assertEquals("192.168.31.10", viewModel.uiState.value.routerIp)
+        assertEquals("RM-AC2100", viewModel.uiState.value.routerName)
+        assertEquals("RM-AC2100", viewModel.uiState.value.hardwareModel)
     }
 
     @Test

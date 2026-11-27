@@ -29,7 +29,8 @@ data class DashboardUiState(
     val wifi2GEnabled: Boolean = true,
     val wifi5GEnabled: Boolean = true,
     val routerIp: String = "",
-    val hardwareWarning: String? = null,
+    val routerName: String = "",
+    val hardwareModel: String = "",
     val errorMessage: String? = null
 )
 
@@ -50,41 +51,76 @@ class DashboardViewModel(
 
     private var pollingJob: Job? = null
 
-    private var isPollingActive = true
+    private var isPollingActive = false
+    private var identityRefreshAttempted = false
+    private val pollingBackoff = PollingBackoff(baseDelayMs = 1500L)
 
     init {
+        updateConnectionInfo()
+    }
+
+    /**
+     * Refresh the connection identity from disk. The view model is created
+     * before the user logs in, so the router IP/name captured in [init] can
+     * be stale until this is called again after discovery/login.
+     */
+    fun refreshConnectionInfo() {
+        updateConnectionInfo()
+    }
+
+    private fun updateConnectionInfo() {
         val model = credentialStore.getHardwareModel()
-        val warning = if (model.isNotEmpty() && model != "UNKNOWN" && model != "NEWIFI3") {
-            "Warning: $model detected. Port links mapping is designed for Newifi D2."
-        } else {
-            null
+        val currentIp = credentialStore.getRouterIp()
+        val currentName = credentialStore.getRouterName()
+        _uiState.update { state ->
+            if (state.routerIp == currentIp && state.routerName == currentName && state.hardwareModel == model) {
+                state
+            } else {
+                state.copy(
+                    routerIp = currentIp,
+                    routerName = currentName,
+                    hardwareModel = model
+                )
+            }
         }
-        _uiState.update { 
-            it.copy(
-                routerIp = credentialStore.getRouterIp(),
-                hardwareWarning = warning
-            ) 
-        }
-        startPolling()
     }
 
     fun setPollingEnabled(enabled: Boolean) {
+        if (enabled == isPollingActive) return
         isPollingActive = enabled
+        if (enabled) {
+            startPolling()
+        } else {
+            pollingJob?.cancel()
+        }
     }
 
     private fun startPolling() {
         pollingJob?.cancel()
         pollingJob = viewModelScope.launch {
             while (isActive) {
-                if (isPollingActive) {
-                    fetchDashboardData(showLoadingIndicator = false)
+                val success = fetchDashboardData(showLoadingIndicator = false)
+                if (success) {
+                    pollingBackoff.onSuccess()
+                } else {
+                    pollingBackoff.onFailure()
                 }
-                delay(1500)
+                delay(pollingBackoff.nextDelayMs())
             }
         }
     }
 
-    private suspend fun fetchDashboardData(showLoadingIndicator: Boolean) = kotlinx.coroutines.coroutineScope {
+    private suspend fun fetchDashboardData(showLoadingIndicator: Boolean): Boolean = kotlinx.coroutines.coroutineScope {
+        val state = _uiState.value
+        if (!identityRefreshAttempted &&
+            (state.routerName.isBlank() || state.hardwareModel.isBlank() ||
+                state.hardwareModel.equals("UNKNOWN", ignoreCase = true))
+        ) {
+            identityRefreshAttempted = true
+            repository.refreshRouterIdentity()
+        }
+        updateConnectionInfo()
+
         if (showLoadingIndicator) {
             _uiState.update { it.copy(isRefreshing = true) }
         }
@@ -94,7 +130,13 @@ class DashboardViewModel(
         val systemJob = launch {
             repository.getSystemStatus().collect { result ->
                 result.onSuccess { status ->
-                    _uiState.update { it.copy(systemStatus = status) }
+                    _uiState.update {
+                        it.copy(
+                            systemStatus = status,
+                            wifi2GEnabled = status.wifi2Enabled,
+                            wifi5GEnabled = status.wifi5Enabled
+                        )
+                    }
                 }
                 result.onFailure { error ->
                     localError = error.message ?: "Failed to fetch system status"
@@ -137,6 +179,8 @@ class DashboardViewModel(
         if (showLoadingIndicator) {
             _uiState.update { it.copy(isRefreshing = false) }
         }
+
+        localError == null
     }
 
     fun refresh() {
@@ -216,7 +260,6 @@ class DashboardViewModel(
     }
 
     public override fun onCleared() {
-        super.onCleared()
         pollingJob?.cancel()
     }
 }

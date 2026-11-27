@@ -235,5 +235,41 @@ class WirelessParserTest : ParserTestBase() {
         assertEquals(90, networks[1].signal)
         assertEquals("WPA-PSK/WPA2-PSK", networks[1].security)
     }
+
+    @Test
+    fun testParseWirelessConfig_RealAspPrefixAndPlaceholders() {
+        val mockHtml = getMockHtml("""
+            <script>
+            if(document.form.rt_wpa_psk.value.length < 1)
+                document.form.rt_wpa_psk.value = "Please type Password";
+            </script>
+            <input type="hidden" name="rt_radio_date_x" value="0111110">
+            <input type="hidden" name="rt_radio_time_x" value="07302230">
+            <input type="hidden" name="rt_radio_time2_x" value="09002100">
+            <input type="hidden" name="rt_ssid2" value="Home+WiFi%202.4G">
+            <input type="hidden" name="rt_wpa_psk_org" value="">
+            <input type="hidden" name="rt_gmode_protection" value="auto">
+            <input type="hidden" name="rt_HT_EXTCHA_old" value="1">
+            <select name="rt_gmode" class="input">
+                <option value="6">b/g/n/ax Mixed</option>
+                <option value="2" selected>b/g/n Mixed</option>
+            </select>
+            <select name="rt_HT_EXTCHA" class="input">
+                <option value="0" selected>Below</option>
+                <option value="1">Above</option>
+            </select>
+            <input type="password" name="rt_wpa_psk" value="">
+        """.trimIndent())
+
+        val config = PadavanResponseParser.parseWirelessConfig(mockHtml, is5GHz = false)
+
+        assertEquals("Home+WiFi 2.4G", config.ssid)
+        assertEquals("2", config.wirelessMode)
+        assertEquals("1", config.extChannel)
+        assertEquals("", config.wpaPsk)
+        assertEquals("0111110", config.radioDate)
+        assertEquals("07302230", config.radioTimeWorkweek)
+        assertEquals("09002100", config.radioTimeWeekend)
+    }
 }
 

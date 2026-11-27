@@ -53,6 +53,7 @@ class LoginViewModelTest {
     @Test
     fun testInit_whenOnboardingCompleted_startsInCredentialsStep() {
         `when`(credentialStore.isOnboardingCompleted()).thenReturn(true)
+        `when`(credentialStore.isRememberCredentials()).thenReturn(true)
         `when`(credentialStore.getRouterIp()).thenReturn("192.168.2.1")
         `when`(credentialStore.getPassword()).thenReturn("my-secret-pass")
 
@@ -63,6 +64,18 @@ class LoginViewModelTest {
     }
 
     @Test
+    fun testInit_whenRememberCredentialsDisabled_doesNotLoadPassword() {
+        `when`(credentialStore.isOnboardingCompleted()).thenReturn(true)
+        `when`(credentialStore.isRememberCredentials()).thenReturn(false)
+        `when`(credentialStore.getPassword()).thenReturn("stale-password")
+
+        val viewModel = LoginViewModel(repository, credentialStore)
+
+        assertEquals("", viewModel.uiState.value.password)
+        assertFalse(viewModel.uiState.value.rememberMe)
+    }
+
+    @Test
     fun testSelectRouter_savesIpMarksOnboardingCompletedAndTransitions() {
         val viewModel = LoginViewModel(repository, credentialStore)
         viewModel.selectRouter("192.168.2.100")
@@ -70,6 +83,50 @@ class LoginViewModelTest {
         verify(credentialStore).saveRouterIp("192.168.2.100")
         verify(credentialStore).setOnboardingCompleted(true)
         assertEquals("192.168.2.100", viewModel.uiState.value.ipAddress)
+        assertEquals(LoginStep.CREDENTIALS, viewModel.uiState.value.currentStep)
+    }
+
+    @Test
+    fun testLogin_passesRememberPreferenceToRepository() = runTest(testDispatcher) {
+        `when`(
+            repository.checkLogin(anyString(), anyString(), anyString(), anyBoolean())
+        ).thenReturn(true)
+
+        val viewModel = LoginViewModel(repository, credentialStore)
+        viewModel.updateIpAddress("192.168.31.10")
+        viewModel.updateUsername("admin")
+        viewModel.updatePassword("secret")
+        viewModel.updateRememberMe(true)
+
+        viewModel.login()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        verify(repository).checkLogin("192.168.31.10", "admin", "secret", true)
+    }
+
+    @Test
+    fun testRefreshCredentialsFromStore_afterLogoutClearsRememberedPassword() {
+        `when`(credentialStore.isOnboardingCompleted()).thenReturn(true)
+        `when`(credentialStore.isRememberCredentials()).thenReturn(true)
+        `when`(credentialStore.getPassword()).thenReturn("saved-password")
+
+        val viewModel = LoginViewModel(repository, credentialStore)
+        assertEquals("saved-password", viewModel.uiState.value.password)
+        assertTrue(viewModel.uiState.value.rememberMe)
+
+        // Simulate logout: secure store is cleared, but the ViewModel was
+        // created long before and still has the old password in memory.
+        `when`(credentialStore.isRememberCredentials()).thenReturn(false)
+        `when`(credentialStore.getPassword()).thenReturn("")
+        `when`(credentialStore.getUsername()).thenReturn("admin")
+        `when`(credentialStore.getRouterIp()).thenReturn("192.168.31.10")
+
+        viewModel.refreshCredentialsFromStore()
+
+        assertEquals("", viewModel.uiState.value.password)
+        assertEquals("admin", viewModel.uiState.value.username)
+        assertEquals("192.168.31.10", viewModel.uiState.value.ipAddress)
+        assertFalse(viewModel.uiState.value.rememberMe)
         assertEquals(LoginStep.CREDENTIALS, viewModel.uiState.value.currentStep)
     }
 
